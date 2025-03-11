@@ -1,9 +1,9 @@
 TAG ?= latest
 PAK_NAME := $(shell jq -r .label config.json)
 
-PLATFORMS := tg5040 rg35xxplus
-MINUI_LIST_VERSION := 0.4.0
-MINUI_KEYBOARD_VERSION := 0.3.0
+PLATFORMS := rg35xxplus tg5040
+MINUI_LIST_VERSION := 0.6.0
+MINUI_KEYBOARD_VERSION := 0.4.0
 
 clean:
 	rm -f bin/jq-arm || true
