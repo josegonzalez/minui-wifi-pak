@@ -2,7 +2,7 @@
 echo "$0" "$@"
 progdir="$(dirname "$0")"
 cd "$progdir" || exit 1
-[ -f "$progdir/debug" ] && set -x
+[ -f "$USERDATA_PATH/Wifi/debug" ] && set -x
 PAK_NAME="$(basename "$progdir")"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$progdir/lib"
 echo 1 >/tmp/stay_awake
