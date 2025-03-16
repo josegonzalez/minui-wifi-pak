@@ -21,14 +21,17 @@ bin/arm64/jq:
 	curl -sSL -o bin/arm64/jq.LICENSE "https://raw.githubusercontent.com/jqlang/jq/refs/heads/$(JQ_VERSION)/COPYING"
 
 bin/%/minui-keyboard:
+	mkdir -p bin/$*
 	curl -f -o bin/$*/minui-keyboard -sSL https://github.com/josegonzalez/minui-keyboard/releases/download/$(MINUI_KEYBOARD_VERSION)/minui-keyboard-$*
 	chmod +x bin/$*/minui-keyboard
 
 bin/%/minui-list:
+	mkdir -p bin/$*
 	curl -f -o bin/$*/minui-list -sSL https://github.com/josegonzalez/minui-list/releases/download/$(MINUI_LIST_VERSION)/minui-list-$*
 	chmod +x bin/$*/minui-list
 
 bin/%/minui-presenter:
+	mkdir -p bin/$*
 	curl -f -o bin/$*/minui-presenter -sSL https://github.com/josegonzalez/minui-presenter/releases/download/$(MINUI_PRESENTER_VERSION)/minui-presenter-$*
 	chmod +x bin/$*/minui-presenter
 
