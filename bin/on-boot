@@ -1,11 +1,19 @@
 #!/bin/sh
-bindir="$(dirname "$0")"
-progdir="$(dirname "$bindir")"
-[ -f "$USERDATA_PATH/Wifi/debug" ] && set -x
-PAK_NAME="$(basename "$progdir")"
+BIN_DIR="$(dirname "$0")"
+PAK_DIR="$(dirname "$BIN_DIR")"
+PAK_NAME="$(basename "$PAK_DIR")"
+PAK_NAME="${PAK_NAME%.*}"
+[ -f "$USERDATA_PATH/$PAK_NAME/debug" ] && set -x
+
+rm -f "$LOGS_PATH/$PAK_NAME.on-boot.txt"
+exec >>"$LOGS_PATH/$PAK_NAME.on-boot.txt"
+exec 2>&1
+
+echo "$0" "$@"
+cd "$PAK_DIR" || exit 1
 
 main() {
-    "$bindir/wifi-enable" &
+    "$BIN_DIR/service-on" &
 }
 
-main "$@" >"$LOGS_PATH/$PAK_NAME.txt" 2>&1
+main "$@"

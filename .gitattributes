@@ -3,5 +3,4 @@
 .gitarchiveinclude export-ignore
 .gitignore export-ignore
 Makefile export-ignore
-Dockerfile.sdl2imgshow export-ignore
 screenshots export-ignore
