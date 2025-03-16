@@ -1,16 +1,25 @@
 #!/bin/sh
-echo "$0" "$@"
-progdir="$(dirname "$0")"
-cd "$progdir" || exit 1
-[ -f "$USERDATA_PATH/Wifi/debug" ] && set -x
-PAK_NAME="$(basename "$progdir")"
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$progdir/lib"
-echo 1 >/tmp/stay_awake
+PAK_DIR="$(dirname "$0")"
+PAK_NAME="$(basename "$PAK_DIR")"
+PAK_NAME="${PAK_NAME%.*}"
+[ -f "$USERDATA_PATH/$PAK_NAME/debug" ] && set -x
 
-JQ="$progdir/bin/jq-arm"
+rm -f "$LOGS_PATH/$PAK_NAME.txt"
+exec >>"$LOGS_PATH/$PAK_NAME.txt"
+exec 2>&1
+
+echo "$0" "$@"
+cd "$PAK_DIR" || exit 1
+mkdir -p "$USERDATA_PATH/$PAK_NAME"
+
+architecture=arm
 if uname -m | grep -q '64'; then
-    JQ="$progdir/bin/jq-arm64"
+    architecture=arm64
 fi
+
+export HOME="$USERDATA_PATH/$PAK_NAME"
+export LD_LIBRARY_PATH="$PAK_DIR/lib:$LD_LIBRARY_PATH"
+export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PATH"
 
 main_screen() {
     minui_list_file="/tmp/minui-list"
@@ -28,7 +37,7 @@ main_screen() {
     echo "Toggle start on boot" >>"$minui_list_file"
 
     ip_address="N/A"
-    if "$progdir/bin/wifi-enabled"; then
+    if wifi-enabled; then
         echo "Enabled: true" >"$minui_list_file"
         echo "Start on boot: $start_on_boot" >>"$minui_list_file"
         echo "Disable" >>"$minui_list_file"
@@ -81,8 +90,8 @@ main_screen() {
         fi
     fi
 
-    killall sdl2imgshow >/dev/null 2>&1 || true
-    "$progdir/bin/minui-list-$PLATFORM" --file "$minui_list_file" --format text --header "Wifi Configuration"
+    killall minui-presenter >/dev/null 2>&1 || true
+    minui-list --file "$minui_list_file" --format text --header "Wifi Configuration"
 }
 
 networks_screen() {
@@ -100,8 +109,8 @@ networks_screen() {
         sleep 1
     done
 
-    killall sdl2imgshow >/dev/null 2>&1 || true
-    "$progdir/bin/minui-list-$PLATFORM" --file "$minui_list_file" --format text --header "Wifi Networks"
+    killall minui-presenter >/dev/null 2>&1 || true
+    minui-list --file "$minui_list_file" --format text --header "Wifi Networks"
 }
 
 password_screen() {
@@ -114,8 +123,8 @@ password_screen() {
         initial_password="$(grep "^$SSID:" "$SDCARD_PATH/wifi.txt" | cut -d':' -f2- | xargs)"
     fi
 
-    killall sdl2imgshow >/dev/null 2>&1 || true
-    password="$("$progdir/bin/minui-keyboard-$PLATFORM" --header "Enter Password" --initial-value "$initial_password")"
+    killall minui-presenter >/dev/null 2>&1 || true
+    password="$(minui-keyboard --header "Enter Password" --initial-value "$initial_password")"
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
@@ -153,30 +162,18 @@ show_message() {
         seconds="forever"
     fi
 
-    killall sdl2imgshow >/dev/null 2>&1 || true
+    killall minui-presenter >/dev/null 2>&1 || true
     echo "$message" 1>&2
     if [ "$seconds" = "forever" ]; then
-        "$progdir/bin/sdl2imgshow" \
-            -i "$progdir/res/background.png" \
-            -f "$progdir/res/fonts/BPreplayBold.otf" \
-            -s 27 \
-            -c "220,220,220" \
-            -q \
-            -t "$message" >/dev/null 2>&1 &
+        minui-presenter --message "$message" --timeout -1 &
     else
-        "$progdir/bin/sdl2imgshow" \
-            -i "$progdir/res/background.png" \
-            -f "$progdir/res/fonts/BPreplayBold.otf" \
-            -s 27 \
-            -c "220,220,220" \
-            -q \
-            -t "$message" >/dev/null 2>&1
-        sleep "$seconds"
+        minui-presenter --message "$message" --timeout "$seconds"
     fi
 }
 
 disable_start_on_boot() {
-    sed -i "/${PAK_NAME}-on-boot/d" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    sed -i "/${PAK_NAME}.pak-on-boot/d" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    sync
     return 0
 }
 
@@ -186,13 +183,14 @@ enable_start_on_boot() {
         echo '' >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
     fi
 
-    echo "test -f \"\$SDCARD_PATH/Tools/\$PLATFORM/$PAK_NAME/bin/on-boot\" && \"\$SDCARD_PATH/Tools/\$PLATFORM/$PAK_NAME/bin/on-boot\" # ${PAK_NAME}-on-boot" >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    echo "test -f \"\$SDCARD_PATH/Tools/\$PLATFORM/$PAK_NAME.pak/bin/on-boot\" && \"\$SDCARD_PATH/Tools/\$PLATFORM/$PAK_NAME.pak/bin/on-boot\" # ${PAK_NAME}.pak-on-boot" >>"$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
     chmod +x "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh"
+    sync
     return 0
 }
 
 will_start_on_boot() {
-    if grep -q "${PAK_NAME}-on-boot" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh" >/dev/null 2>&1; then
+    if grep -q "${PAK_NAME}.pak-on-boot" "$SDCARD_PATH/.userdata/$PLATFORM/auto.sh" >/dev/null 2>&1; then
         return 0
     fi
     return 1
@@ -200,12 +198,12 @@ will_start_on_boot() {
 
 write_config() {
     echo "Generating wpa_supplicant.conf..."
-    cp "$progdir/res/wpa_supplicant.conf.tmpl" "$progdir/res/wpa_supplicant.conf"
+    cp "$PAK_DIR/res/wpa_supplicant.conf.tmpl" "$PAK_DIR/res/wpa_supplicant.conf"
     echo "Generating netplan.yaml..."
-    cp "$progdir/res/netplan.yaml.tmpl" "$progdir/res/netplan.yaml"
+    cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
 
-    if [ ! -f "$SDCARD_PATH/wifi.txt" ] && [ -f "$progdir/wifi.txt" ]; then
-        mv "$progdir/wifi.txt" "$SDCARD_PATH/wifi.txt"
+    if [ ! -f "$SDCARD_PATH/wifi.txt" ] && [ -f "$PAK_DIR/wifi.txt" ]; then
+        mv "$PAK_DIR/wifi.txt" "$SDCARD_PATH/wifi.txt"
     fi
 
     touch "$SDCARD_PATH/wifi.txt"
@@ -252,21 +250,21 @@ write_config() {
                 priority_used=true
             fi
             echo "}"
-        } >>"$progdir/res/wpa_supplicant.conf"
+        } >>"$PAK_DIR/res/wpa_supplicant.conf"
         {
             echo "                \"$ssid\":"
             echo "                    password: \"$psk\""
-        } >>"$progdir/res/netplan.yaml"
+        } >>"$PAK_DIR/res/netplan.yaml"
     done <"$SDCARD_PATH/wifi.txt"
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
-        cp "$progdir/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
-        cp "$progdir/res/netplan.yaml" /etc/netplan/01-netcfg.yaml
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
+        cp "$PAK_DIR/res/netplan.yaml" /etc/netplan/01-netcfg.yaml
         if [ "$has_passwords" = false ]; then
             rm -f /etc/netplan/01-netcfg.yaml
         fi
     elif [ "$PLATFORM" = "tg5040" ]; then
-        cp "$progdir/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -277,8 +275,7 @@ wifi_off() {
     echo "Preparing to toggle wifi off..."
     if [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        chmod +x "$JQ"
-        "$JQ" '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
+        jq '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
         mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
     fi
 
@@ -300,7 +297,7 @@ wifi_off() {
         rfkill block wifi || true
     fi
 
-    cp "$progdir/res/wpa_supplicant.conf.tmpl" "$progdir/res/wpa_supplicant.conf"
+    cp "$PAK_DIR/res/wpa_supplicant.conf.tmpl" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         rm -f /etc/netplan/01-netcfg.yaml
         netplan apply
@@ -315,7 +312,7 @@ wifi_on() {
         return 1
     fi
 
-    if ! "$progdir/bin/wifi-enable"; then
+    if ! service-on; then
         return 1
     fi
 
@@ -335,9 +332,9 @@ wifi_on() {
 }
 
 network_loop() {
-    if ! "$progdir/bin/wifi-enabled"; then
+    if ! wifi-enabled; then
         show_message "Enabling wifi..." forever
-        if ! "$progdir/bin/wifi-enable"; then
+        if ! service-on; then
             show_message "Failed to enable wifi!" 2
             return 1
         fi
@@ -395,10 +392,11 @@ network_loop() {
 
 cleanup() {
     rm -f /tmp/stay_awake
-    killall sdl2imgshow >/dev/null 2>&1 || true
+    killall minui-presenter >/dev/null 2>&1 || true
 }
 
 main() {
+    echo "1" >/tmp/stay_awake
     trap "cleanup" EXIT INT TERM HUP QUIT
 
     if [ "$PLATFORM" = "tg3040" ] && [ -z "$DEVICE" ]; then
@@ -412,19 +410,25 @@ main() {
         return 1
     fi
 
-    if [ ! -f "$progdir/bin/minui-keyboard-$PLATFORM" ]; then
-        show_message "$progdir/bin/minui-keyboard-$PLATFORM not found" 2
-        return 1
-    fi
-    if [ ! -f "$progdir/bin/minui-list-$PLATFORM" ]; then
-        show_message "$progdir/bin/minui-list-$PLATFORM not found" 2
+    if ! command -v minui-keyboard >/dev/null 2>&1; then
+        show_message "minui-keyboard not found" 2
         return 1
     fi
 
-    chmod +x "$progdir/bin/minui-keyboard-$PLATFORM"
-    chmod +x "$progdir/bin/minui-list-$PLATFORM"
-    chmod +x "$progdir/bin/sdl2imgshow"
-    chmod +x "$JQ"
+    if ! command -v minui-list >/dev/null 2>&1; then
+        show_message "minui-list not found" 2
+        return 1
+    fi
+
+    if ! command -v minui-presenter >/dev/null 2>&1; then
+        show_message "minui-presenter not found" 2
+        return 1
+    fi
+
+    chmod +x "$PAK_DIR/bin/$architecture/jq"
+    chmod +x "$PAK_DIR/bin/$architecture/minui-keyboard"
+    chmod +x "$PAK_DIR/bin/$architecture/minui-list"
+    chmod +x "$PAK_DIR/bin/$architecture/minui-presenter"
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
@@ -449,7 +453,7 @@ main() {
             fi
         elif echo "$selection" | grep -q "^Enable$"; then
             show_message "Enabling wifi..." forever
-            if ! "$progdir/bin/wifi-enable"; then
+            if ! service-on; then
                 show_message "Failed to enable wifi!" 2
                 continue
             fi
@@ -461,7 +465,7 @@ main() {
                 return 1
             fi
             show_message "Refreshing connection..." forever
-            if ! "$progdir/bin/wifi-enable"; then
+            if ! service-on; then
                 show_message "Failed to enable wifi!" 2
                 continue
             fi
@@ -490,4 +494,4 @@ main() {
     done
 }
 
-main "$@" >"$LOGS_PATH/$PAK_NAME.txt" 2>&1
+main "$@"

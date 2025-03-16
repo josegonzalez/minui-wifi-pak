@@ -1,8 +1,7 @@
-bin/jq-arm
-bin/jq-arm64
-bin/minui-keyboard-tg5040
-bin/minui-keyboard-rg35xxplus
-bin/minui-list-tg5040
-bin/minui-list-rg35xxplus
-bin/sdl2imgshow
-res/fonts/BPreplayBold.otf
+bin/arm64/jq
+bin/rg35xxplus/minui-keyboard
+bin/rg35xxplus/minui-list
+bin/rg35xxplus/minui-presenter
+bin/tg5040/minui-keyboard
+bin/tg5040/minui-list
+bin/tg5040/minui-presenter
