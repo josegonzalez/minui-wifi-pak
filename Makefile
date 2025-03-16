@@ -3,6 +3,8 @@ PAK_NAME := $(shell jq -r .label config.json)
 
 ARCHITECTURES := arm64
 PLATFORMS := rg35xxplus tg5040
+
+JQ_VERSION := 1.7.1
 MINUI_LIST_VERSION := 0.6.1
 MINUI_KEYBOARD_VERSION := 0.4.1
 MINUI_PRESENTER_VERSION := 0.3.1
