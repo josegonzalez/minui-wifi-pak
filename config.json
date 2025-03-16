@@ -1,5 +1,9 @@
 {
     "label": "Wifi",
     "launch": "launch.sh",
-    "description": "Manage Wifi settings"
+    "description": "Manage Wifi settings",
+    "platforms": [
+        "rg35xxplus",
+        "tg5040"
+    ]
 }
