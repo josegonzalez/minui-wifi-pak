@@ -426,9 +426,9 @@ main() {
     fi
 
     chmod +x "$PAK_DIR/bin/$architecture/jq"
-    chmod +x "$PAK_DIR/bin/$architecture/minui-keyboard"
-    chmod +x "$PAK_DIR/bin/$architecture/minui-list"
-    chmod +x "$PAK_DIR/bin/$architecture/minui-presenter"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-keyboard"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-list"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
