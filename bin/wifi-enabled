@@ -1,18 +1,22 @@
 #!/bin/sh
-bindir="$(dirname "$0")"
-progdir="$(dirname "$bindir")"
-[ -f "$USERDATA_PATH/Wifi/debug" ] && set -x
+BIN_DIR="$(dirname "$0")"
+PAK_DIR="$(dirname "$BIN_DIR")"
+PAK_NAME="$(basename "$PAK_DIR")"
+PAK_NAME="${PAK_NAME%.*}"
+[ -f "$USERDATA_PATH/$PAK_NAME/debug" ] && set -x
 
-JQ="$bindir/jq-arm"
+architecture=arm
 if uname -m | grep -q '64'; then
-    JQ="$bindir/jq-arm64"
+    architecture=arm64
 fi
+
+export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PATH"
 
 main() {
     SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
     if [ -f "$SYSTEM_JSON_PATH" ]; then
-        chmod +x "$JQ"
-        wifi_enabled="$("$JQ" '.wifi' "$SYSTEM_JSON_PATH")"
+        chmod +x "$PAK_DIR/bin/$architecture/jq"
+        wifi_enabled="$("$PAK_DIR/bin/$architecture/jq" '.wifi' "$SYSTEM_JSON_PATH")"
         if [ "$wifi_enabled" != "1" ]; then
             return 1
         fi

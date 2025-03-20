@@ -21,8 +21,8 @@ main() {
     echo "Preparing to enable wifi..."
     if [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        chmod +x "$JQ"
-        "$JQ" '.wifi = 1' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
+        chmod +x "$PAK_DIR/bin/$architecture/jq"
+        "$PAK_DIR/bin/$architecture/jq" '.wifi = 1' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
         mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
     fi
 
