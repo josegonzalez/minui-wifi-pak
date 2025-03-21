@@ -275,8 +275,16 @@ wifi_off() {
     echo "Preparing to toggle wifi off..."
     if [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        jq '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
-        mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
+        [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
+        [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
+
+        if [ -x /usr/trimui/bin/systemval ]; then
+            /usr/trimui/bin/systemval set wifi 0
+        else
+            chmod +x "$PAK_DIR/bin/$architecture/jq"
+            jq '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
+            mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
+        fi
     fi
 
     if pgrep wpa_supplicant; then
