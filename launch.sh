@@ -392,6 +392,8 @@ network_loop() {
             show_message "Failed to start wifi!" 2
             return 1
         fi
+
+        killall minui-presenter >/dev/null 2>&1 || true
         break
     done
 
