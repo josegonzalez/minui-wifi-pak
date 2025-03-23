@@ -49,6 +49,11 @@ main() {
         if ! grep -c 8188fu /proc/modules; then
             insmod "$PAK_DIR/res/miyoomini/8188fu.ko"
         fi
+
+        /customer/app/wpa_cli -i wlan0 disconnect
+        /customer/app/wpa_cli -i wlan0 terminate
+        /customer/app/wpa_cli -i wlan0 reconfigure
+
         ifconfig lo up
         /customer/app/axp_test wifion
         sleep 2
@@ -56,6 +61,8 @@ main() {
         /customer/app/wpa_supplicant -B -D nl80211 -iwlan0 -c /appconfigs/wpa_supplicant.conf
         ln -sf /dev/null /tmp/udhcpc.log
         udhcpc -i wlan0 -s /etc/init.d/udhcpc.script &
+
+        /customer/app/wpa_cli -i wlan0 reconnect
         iw dev wlan0 set power_save off
     elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         if [ "$PLATFORM" = "my282" ]; then
