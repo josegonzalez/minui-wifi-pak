@@ -18,7 +18,7 @@ if uname -m | grep -q '64'; then
 fi
 
 export HOME="$USERDATA_PATH/$PAK_NAME"
-export LD_LIBRARY_PATH="$PAK_DIR/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$PAK_DIR/lib/$PLATFORM:$PAK_DIR/lib:$LD_LIBRARY_PATH"
 export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PATH"
 
 main_screen() {
@@ -91,7 +91,7 @@ main_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --header "Wifi Configuration"
+    minui-list --file "$minui_list_file" --format text --title "Wifi Configuration"
 }
 
 networks_screen() {
@@ -110,7 +110,7 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --header "Wifi Networks"
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks"
 }
 
 password_screen() {
@@ -164,6 +164,7 @@ show_message() {
 
     killall minui-presenter >/dev/null 2>&1 || true
     echo "$message" 1>&2
+    return 0
     if [ "$seconds" = "forever" ]; then
         minui-presenter --message "$message" --timeout -1 &
     else
@@ -199,13 +200,15 @@ will_start_on_boot() {
 write_config() {
     echo "Generating wpa_supplicant.conf..."
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
     fi
 
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
-    echo "Generating netplan.yaml..."
-    cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
+    if [ "$PLATFORM" = "rg35xxplus" ]; then
+        echo "Generating netplan.yaml..."
+        cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
+    fi
 
     if [ ! -f "$SDCARD_PATH/wifi.txt" ] && [ -f "$PAK_DIR/wifi.txt" ]; then
         mv "$PAK_DIR/wifi.txt" "$SDCARD_PATH/wifi.txt"
@@ -256,13 +259,21 @@ write_config() {
             fi
             echo "}"
         } >>"$PAK_DIR/res/wpa_supplicant.conf"
-        {
-            echo "                \"$ssid\":"
-            echo "                    password: \"$psk\""
-        } >>"$PAK_DIR/res/netplan.yaml"
+        if [ "$PLATFORM" = "rg35xxplus" ]; then
+            {
+                echo "                \"$ssid\":"
+                echo "                    password: \"$psk\""
+            } >>"$PAK_DIR/res/netplan.yaml"
+        fi
     done <"$SDCARD_PATH/wifi.txt"
 
-    if [ "$PLATFORM" = "rg35xxplus" ]; then
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /appconfigs/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "my282" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "rg35xxplus" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
         cp "$PAK_DIR/res/netplan.yaml" /etc/netplan/01-netcfg.yaml
         if [ "$has_passwords" = false ]; then
@@ -270,9 +281,6 @@ write_config() {
         fi
     elif [ "$PLATFORM" = "tg5040" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
-    elif [ "$PLATFORM" = "my282" ]; then
-        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
-        cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -281,9 +289,11 @@ write_config() {
 
 wifi_off() {
     echo "Preparing to toggle wifi off..."
-    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        if [ "$PLATFORM" = "my282" ]; then
+        if [ "$PLATFORM" = "miyoomini" ]; then
+            SYSTEM_JSON_PATH="/appconfigs/system.json"
+        elif [ "$PLATFORM" = "my282" ]; then
             SYSTEM_JSON_PATH="/config/system.json"
         fi
 
@@ -306,20 +316,30 @@ wifi_off() {
         killall -9 wpa_supplicant 2>/dev/null || true
     fi
 
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        killall udhcpc 2>/dev/null || true
+    fi
+
     status="$(cat /sys/class/net/wlan0/flags)"
     if [ "$status" = "0x1003" ]; then
         echo "Marking wlan0 interface down..."
         ifconfig wlan0 down || true
     fi
 
-    if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
-        echo "Blocking wireless..."
-        rfkill block wifi 2>/dev/null || true
+    if command -v rfkill >/dev/null 2>&1; then
+        if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
+            echo "Blocking wireless..."
+            rfkill block wifi 2>/dev/null || true
+        fi
+    fi
+
+    if [ -f /customer/app/axp_test ]; then
+        /customer/app/axp_test wifioff
     fi
 
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
     fi
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
@@ -430,10 +450,11 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="my282 tg5040 rg35xxplus"
-    if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
-        show_message "$PLATFORM is not a supported platform" 2
-        return 1
+    if [ "$PLATFORM" = "miyoomini" ] && [ -z "$DEVICE" ]; then
+        export DEVICE="miyoomini"
+        if [ -f /customer/app/axp_test ]; then
+            export DEVICE="miyoominiplus"
+        fi
     fi
 
     if ! command -v minui-keyboard >/dev/null 2>&1; then
@@ -451,10 +472,22 @@ main() {
         return 1
     fi
 
-    chmod +x "$PAK_DIR/bin/$architecture/jq"
-    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-keyboard"
-    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-list"
-    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
+    allowed_platforms="my282 tg5040 rg35xxplus miyoomini"
+    if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
+        show_message "$PLATFORM is not a supported platform" 2
+        return 1
+    fi
+
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        if [ ! -f /customer/app/axp_test ]; then
+            show_message "Wifi not supported on non-Plus version of the Miyoo Mini" 2
+            return 1
+        fi
+
+        if ! grep -c 8188fu /proc/modules; then
+            insmod "$PAK_DIR/res/miyoomini/8188fu.ko"
+        fi
+    fi
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
@@ -463,6 +496,11 @@ main() {
             return 1
         fi
     fi
+
+    chmod +x "$PAK_DIR/bin/$architecture/jq"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-keyboard"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-list"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
 
     while true; do
         selection="$(main_screen)"

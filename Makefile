@@ -2,12 +2,12 @@ TAG ?= latest
 PAK_NAME := $(shell jq -r .label config.json)
 
 ARCHITECTURES := arm arm64
-PLATFORMS := my282 rg35xxplus tg5040
+PLATFORMS := miyoomini my282 rg35xxplus tg5040
 
 JQ_VERSION := 1.7.1
-MINUI_LIST_VERSION := 0.6.1
-MINUI_KEYBOARD_VERSION := 0.4.1
-MINUI_PRESENTER_VERSION := 0.3.1
+MINUI_LIST_VERSION := 0.7.0
+MINUI_KEYBOARD_VERSION := 0.5.0
+MINUI_PRESENTER_VERSION := 0.4.0
 
 clean:
 	rm -f bin/*/jq || true

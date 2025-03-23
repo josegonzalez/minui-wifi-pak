@@ -7,3 +7,4 @@ res/fonts/*
 !bin/wifi-enable
 !bin/wifi-enabled
 !bin/on-boot
+!bin/miyoomini/iw
