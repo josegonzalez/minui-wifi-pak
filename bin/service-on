@@ -46,7 +46,14 @@ main() {
         else
             /etc/init.d/wpa_supplicant stop || true
         fi
-        /etc/init.d/wpa_supplicant start || true
+        if ! /etc/init.d/wpa_supplicant start; then
+            echo "Failed to start wpa_supplicant via init.d"
+        fi
+
+        if ! pgrep wpa_supplicant; then
+            echo "Failed to start wpa_supplicant"
+            return 1
+        fi
         ( (udhcpc -i wlan0 -q &) &)
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
         ip link set wlan0 up
