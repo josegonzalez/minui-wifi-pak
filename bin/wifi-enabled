@@ -35,9 +35,11 @@ main() {
         fi
     fi
 
-    wifi_status="$(rfkill list wifi 2>/dev/null || true)"
-    if echo "$wifi_status" | grep -q "blocked: yes"; then
-        return 1
+    if command -v rfkill >/dev/null 2>&1; then
+        wifi_status="$(rfkill list wifi 2>/dev/null || true)"
+        if echo "$wifi_status" | grep -q "blocked: yes"; then
+            return 1
+        fi
     fi
 
     if ! pgrep wpa_supplicant; then

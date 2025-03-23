@@ -38,8 +38,10 @@ main() {
         fi
     fi
 
-    echo "Unblocking wireless..."
-    rfkill unblock wifi 2>/dev/null || true
+    if command -v rfkill >/dev/null 2>&1; then
+        echo "Unblocking wireless..."
+        rfkill unblock wifi 2>/dev/null || true
+    fi
 
     echo "Starting wpa_supplicant..."
     if [ "$PLATFORM" = "miyoomini" ]; then

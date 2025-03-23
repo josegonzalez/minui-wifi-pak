@@ -326,9 +326,11 @@ wifi_off() {
         ifconfig wlan0 down || true
     fi
 
-    if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
-        echo "Blocking wireless..."
-        rfkill block wifi 2>/dev/null || true
+    if command -v rfkill >/dev/null 2>&1; then
+        if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
+            echo "Blocking wireless..."
+            rfkill block wifi 2>/dev/null || true
+        fi
     fi
 
     if [ -f /customer/app/axp_test ]; then
