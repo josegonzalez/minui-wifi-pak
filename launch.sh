@@ -18,7 +18,7 @@ if uname -m | grep -q '64'; then
 fi
 
 export HOME="$USERDATA_PATH/$PAK_NAME"
-export LD_LIBRARY_PATH="$PAK_DIR/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$PAK_DIR/$PLATFORM/lib:$PAK_DIR/lib:$LD_LIBRARY_PATH"
 export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PATH"
 
 main_screen() {
