@@ -1,7 +1,7 @@
 TAG ?= latest
 PAK_NAME := $(shell jq -r .label config.json)
 
-ARCHITECTURES := arm64
+ARCHITECTURES := arm arm64
 PLATFORMS := my282 rg35xxplus tg5040
 
 JQ_VERSION := 1.7.1
@@ -16,6 +16,11 @@ clean:
 	rm -f bin/*/minui-presenter || true
 
 build: $(foreach platform,$(PLATFORMS),bin/$(platform)/minui-keyboard bin/$(platform)/minui-list bin/$(platform)/minui-presenter) $(foreach arch,$(ARCHITECTURES),bin/$(arch)/jq)
+
+bin/arm/jq:
+	mkdir -p bin/arm
+	curl -f -o bin/arm/jq -sSL https://github.com/jqlang/jq/releases/download/jq-$(JQ_VERSION)/jq-linux-armhf
+	curl -sSL -o bin/arm/jq.LICENSE "https://raw.githubusercontent.com/jqlang/jq/refs/heads/$(JQ_VERSION)/COPYING"
 
 bin/arm64/jq:
 	mkdir -p bin/arm64
