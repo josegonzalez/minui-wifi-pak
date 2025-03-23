@@ -476,6 +476,10 @@ main() {
             show_message "Wifi not supported on non-Plus version of the Miyoo Mini" 2
             return 1
         fi
+
+        if ! grep -c 8188fu /proc/modules; then
+            insmod "$PAK_DIR/res/miyoomini/8188fu.ko"
+        fi
     fi
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
