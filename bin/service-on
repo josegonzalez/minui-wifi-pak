@@ -19,8 +19,11 @@ main() {
     fi
 
     echo "Preparing to enable wifi..."
-    if [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
+        if [ "$PLATFORM" = "my282" ]; then
+            SYSTEM_JSON_PATH="/config/system.json"
+        fi
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
 
