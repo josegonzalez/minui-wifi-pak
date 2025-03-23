@@ -483,6 +483,10 @@ main() {
             fi
         elif echo "$selection" | grep -q "^Enable$"; then
             show_message "Enabling wifi..." forever
+            if ! write_config; then
+                show_message "Failed to write config!" 2
+                continue
+            fi
             if ! service-on; then
                 show_message "Failed to enable wifi!" 2
                 continue
@@ -494,6 +498,12 @@ main() {
                 show_message "Failed to stop wifi!" 2
                 return 1
             fi
+
+            if ! write_config; then
+                show_message "Failed to write config!" 2
+                continue
+            fi
+
             show_message "Refreshing connection..." forever
             if ! service-on; then
                 show_message "Failed to enable wifi!" 2
