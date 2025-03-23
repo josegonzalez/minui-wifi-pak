@@ -164,7 +164,9 @@ show_message() {
 
     killall minui-presenter >/dev/null 2>&1 || true
     echo "$message" 1>&2
-    return 0
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        return 0
+    fi
     if [ "$seconds" = "forever" ]; then
         minui-presenter --message "$message" --timeout -1 &
     else
