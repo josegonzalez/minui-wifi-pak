@@ -40,8 +40,12 @@ main() {
     rfkill unblock wifi || true
 
     echo "Starting wpa_supplicant..."
-    if [ "$PLATFORM" = "tg5040" ]; then
-        /etc/init.d/wpa_supplicant stop || true
+    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+        if [ "$PLATFORM" = "my282" ]; then
+            killall -9 wpa_supplicant 2>/dev/null || true
+        else
+            /etc/init.d/wpa_supplicant stop || true
+        fi
         /etc/init.d/wpa_supplicant start || true
         ( (udhcpc -i wlan0 -q &) &)
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
