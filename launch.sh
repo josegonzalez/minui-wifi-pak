@@ -198,7 +198,12 @@ will_start_on_boot() {
 
 write_config() {
     echo "Generating wpa_supplicant.conf..."
-    cp "$PAK_DIR/res/wpa_supplicant.conf.tmpl" "$PAK_DIR/res/wpa_supplicant.conf"
+    template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
+    if [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    fi
+
+    cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     echo "Generating netplan.yaml..."
     cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
 
@@ -265,6 +270,9 @@ write_config() {
         fi
     elif [ "$PLATFORM" = "tg5040" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "my282" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -273,8 +281,12 @@ write_config() {
 
 wifi_off() {
     echo "Preparing to toggle wifi off..."
-    if [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
+        if [ "$PLATFORM" = "my282" ]; then
+            SYSTEM_JSON_PATH="/config/system.json"
+        fi
+
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
 
@@ -302,10 +314,14 @@ wifi_off() {
 
     if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
         echo "Blocking wireless..."
-        rfkill block wifi || true
+        rfkill block wifi 2>/dev/null || true
     fi
 
-    cp "$PAK_DIR/res/wpa_supplicant.conf.tmpl" "$PAK_DIR/res/wpa_supplicant.conf"
+    template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
+    if [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    fi
+    cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         rm -f /etc/netplan/01-netcfg.yaml
         netplan apply
@@ -414,7 +430,7 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="tg5040 rg35xxplus"
+    allowed_platforms="my282 tg5040 rg35xxplus"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -463,6 +479,10 @@ main() {
             fi
         elif echo "$selection" | grep -q "^Enable$"; then
             show_message "Enabling wifi..." forever
+            if ! write_config; then
+                show_message "Failed to write config!" 2
+                continue
+            fi
             if ! service-on; then
                 show_message "Failed to enable wifi!" 2
                 continue
@@ -474,6 +494,12 @@ main() {
                 show_message "Failed to stop wifi!" 2
                 return 1
             fi
+
+            if ! write_config; then
+                show_message "Failed to write config!" 2
+                continue
+            fi
+
             show_message "Refreshing connection..." forever
             if ! service-on; then
                 show_message "Failed to enable wifi!" 2

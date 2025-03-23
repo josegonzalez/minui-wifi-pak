@@ -14,6 +14,10 @@ export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PAT
 
 main() {
     SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
+    if [ "$PLATFORM" = "my282" ]; then
+        SYSTEM_JSON_PATH="/config/system.json"
+    fi
+
     if [ -f "$SYSTEM_JSON_PATH" ]; then
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
@@ -31,7 +35,7 @@ main() {
         fi
     fi
 
-    wifi_status="$(rfkill list wifi || true)"
+    wifi_status="$(rfkill list wifi 2>/dev/null || true)"
     if echo "$wifi_status" | grep -q "blocked: yes"; then
         return 1
     fi

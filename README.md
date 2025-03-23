@@ -6,6 +6,7 @@ A MinUI app that manages wifi connections.
 
 This pak is designed and tested on the following MinUI Platforms and devices:
 
+- `my282`: Miyoo A30
 - `tg5040`: Trimui Brick (formerly `tg3040`), Trimui Smart Pro
 - `rg35xxplus`: RG-35XX Plus, RG-34XX, RG-35XX H, RG-35XX SP
 
@@ -21,6 +22,9 @@ Use the correct platform for your device.
 6. Unmount your SD Card and insert it into your MinUI device.
 
 ## Usage
+
+> [!NOTE]
+> When wifi is enabled for the Miyoo A30, MinUI may report an incorrect status for the connection. See [this pull request](https://github.com/shauninman/MinUI/pull/41) for more details.
 
 Browse to `Tools > Wifi` and press `A` to enter the wifi management screen. It will display your current wifi connection status, and allow you to scan for available networks as well as connect to them (with password entry).
 
