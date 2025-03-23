@@ -424,6 +424,10 @@ main() {
     echo "1" >/tmp/stay_awake
     trap "cleanup" EXIT INT TERM HUP QUIT
 
+    if [ -f /config/system.json ]; then
+        cp /config/system.json "$SDCARD_PATH/system.json"
+    fi
+
     if [ "$PLATFORM" = "tg3040" ] && [ -z "$DEVICE" ]; then
         export DEVICE="brick"
         export PLATFORM="tg5040"
