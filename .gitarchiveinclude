@@ -1,4 +1,7 @@
 bin/arm64/jq
+bin/my282/minui-keyboard
+bin/my282/minui-list
+bin/my282/minui-presenter
 bin/rg35xxplus/minui-keyboard
 bin/rg35xxplus/minui-list
 bin/rg35xxplus/minui-presenter
