@@ -91,7 +91,7 @@ main_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --header "Wifi Configuration"
+    minui-list --file "$minui_list_file" --format text --title "Wifi Configuration"
 }
 
 networks_screen() {
@@ -110,7 +110,7 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --header "Wifi Networks"
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks"
 }
 
 password_screen() {
