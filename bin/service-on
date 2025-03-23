@@ -19,9 +19,11 @@ main() {
     fi
 
     echo "Preparing to enable wifi..."
-    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        if [ "$PLATFORM" = "my282" ]; then
+        if [ "$PLATFORM" = "miyoomini" ]; then
+            SYSTEM_JSON_PATH="/appconfigs/system.json"
+        elif [ "$PLATFORM" = "my282" ]; then
             SYSTEM_JSON_PATH="/config/system.json"
         fi
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
@@ -40,7 +42,19 @@ main() {
     rfkill unblock wifi 2>/dev/null || true
 
     echo "Starting wpa_supplicant..."
-    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        killall wpa_supplicant >/dev/null 2>&1 &
+        if ! grep -c 8188fu /proc/modules; then
+            insmod "$PAK_DIR/res/miyoomini/8188fu.ko"
+        fi
+        ifconfig lo up
+        /customer/app/axp_test wifion
+        sleep 2
+        ifconfig wlan0 up
+        /customer/app/wpa_supplicant -B -D nl80211 -iwlan0 -c /appconfigs/wpa_supplicant.conf
+        ln -sf /dev/null /tmp/udhcpc.log
+        udhcpc -i wlan0 -s /etc/init.d/udhcpc.script >/dev/null 2>&1 &
+    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         if [ "$PLATFORM" = "my282" ]; then
             killall -9 wpa_supplicant 2>/dev/null || true
         else

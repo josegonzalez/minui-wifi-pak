@@ -199,8 +199,8 @@ will_start_on_boot() {
 write_config() {
     echo "Generating wpa_supplicant.conf..."
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.miyoo.tmpl"
     fi
 
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
@@ -262,7 +262,13 @@ write_config() {
         } >>"$PAK_DIR/res/netplan.yaml"
     done <"$SDCARD_PATH/wifi.txt"
 
-    if [ "$PLATFORM" = "rg35xxplus" ]; then
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /appconfigs/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "my282" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "rg35xxplus" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
         cp "$PAK_DIR/res/netplan.yaml" /etc/netplan/01-netcfg.yaml
         if [ "$has_passwords" = false ]; then
@@ -270,9 +276,6 @@ write_config() {
         fi
     elif [ "$PLATFORM" = "tg5040" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
-    elif [ "$PLATFORM" = "my282" ]; then
-        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
-        cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -281,9 +284,11 @@ write_config() {
 
 wifi_off() {
     echo "Preparing to toggle wifi off..."
-    if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        if [ "$PLATFORM" = "my282" ]; then
+        if [ "$PLATFORM" = "miyoomini" ]; then
+            SYSTEM_JSON_PATH="/appconfigs/system.json"
+        elif [ "$PLATFORM" = "my282" ]; then
             SYSTEM_JSON_PATH="/config/system.json"
         fi
 
@@ -306,6 +311,10 @@ wifi_off() {
         killall -9 wpa_supplicant 2>/dev/null || true
     fi
 
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        killall udhcpc 2>/dev/null || true
+    fi
+
     status="$(cat /sys/class/net/wlan0/flags)"
     if [ "$status" = "0x1003" ]; then
         echo "Marking wlan0 interface down..."
@@ -317,9 +326,13 @@ wifi_off() {
         rfkill block wifi 2>/dev/null || true
     fi
 
+    if [ -f /customer/app/axp_test ]; then
+        /customer/app/axp_test wifioff
+    fi
+
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.miyoo.tmpl"
     fi
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
@@ -430,10 +443,11 @@ main() {
         export PLATFORM="tg5040"
     fi
 
-    allowed_platforms="my282 tg5040 rg35xxplus"
-    if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
-        show_message "$PLATFORM is not a supported platform" 2
-        return 1
+    if [ "$PLATFORM" = "miyoomini" ] && [ -z "$DEVICE" ]; then
+        export DEVICE="miyoomini"
+        if [ -f /customer/app/axp_test ]; then
+            export DEVICE="miyoominiplus"
+        fi
     fi
 
     if ! command -v minui-keyboard >/dev/null 2>&1; then
@@ -451,10 +465,18 @@ main() {
         return 1
     fi
 
-    chmod +x "$PAK_DIR/bin/$architecture/jq"
-    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-keyboard"
-    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-list"
-    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
+    allowed_platforms="my282 tg5040 rg35xxplus miyoomini"
+    if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
+        show_message "$PLATFORM is not a supported platform" 2
+        return 1
+    fi
+
+    if [ "$PLATFORM" = "miyoomini" ]; then
+        if [ ! -f /customer/app/axp_test ]; then
+            show_message "Wifi not supported on non-Plus version of the Miyoo Mini" 2
+            return 1
+        fi
+    fi
 
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         RGXX_MODEL="$(strings /mnt/vendor/bin/dmenu.bin | grep ^RG)"
@@ -463,6 +485,11 @@ main() {
             return 1
         fi
     fi
+
+    chmod +x "$PAK_DIR/bin/$architecture/jq"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-keyboard"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-list"
+    chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
 
     while true; do
         selection="$(main_screen)"
