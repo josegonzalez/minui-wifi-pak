@@ -279,7 +279,7 @@ wifi_off() {
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
 
         if [ -x /usr/trimui/bin/systemval ]; then
-            /usr/trimui/bin/systemval set wifi 0
+            /usr/trimui/bin/systemval wifi 0
         else
             chmod +x "$PAK_DIR/bin/$architecture/jq"
             jq '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
