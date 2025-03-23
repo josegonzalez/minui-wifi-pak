@@ -313,7 +313,7 @@ wifi_off() {
 
     if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
         echo "Blocking wireless..."
-        rfkill block wifi || true
+        rfkill block wifi 2>/dev/null || true
     fi
 
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"

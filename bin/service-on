@@ -37,7 +37,7 @@ main() {
     fi
 
     echo "Unblocking wireless..."
-    rfkill unblock wifi || true
+    rfkill unblock wifi 2>/dev/null || true
 
     echo "Starting wpa_supplicant..."
     if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
