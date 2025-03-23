@@ -198,7 +198,12 @@ will_start_on_boot() {
 
 write_config() {
     echo "Generating wpa_supplicant.conf..."
-    cp "$PAK_DIR/res/wpa_supplicant.conf.tmpl" "$PAK_DIR/res/wpa_supplicant.conf"
+    template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
+    if [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    fi
+
+    cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     echo "Generating netplan.yaml..."
     cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
 
@@ -265,6 +270,8 @@ write_config() {
         fi
     elif [ "$PLATFORM" = "tg5040" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "my282" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl" /config/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
@@ -309,7 +316,11 @@ wifi_off() {
         rfkill block wifi || true
     fi
 
-    cp "$PAK_DIR/res/wpa_supplicant.conf.tmpl" "$PAK_DIR/res/wpa_supplicant.conf"
+    template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
+    if [ "$PLATFORM" = "my282" ]; then
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl"
+    fi
+    cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
         rm -f /etc/netplan/01-netcfg.yaml
         netplan apply
