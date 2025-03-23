@@ -204,8 +204,10 @@ write_config() {
     fi
 
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
-    echo "Generating netplan.yaml..."
-    cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
+    if [ "$PLATFORM" = "rg35xxplus" ]; then
+        echo "Generating netplan.yaml..."
+        cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
+    fi
 
     if [ ! -f "$SDCARD_PATH/wifi.txt" ] && [ -f "$PAK_DIR/wifi.txt" ]; then
         mv "$PAK_DIR/wifi.txt" "$SDCARD_PATH/wifi.txt"
@@ -256,10 +258,12 @@ write_config() {
             fi
             echo "}"
         } >>"$PAK_DIR/res/wpa_supplicant.conf"
-        {
-            echo "                \"$ssid\":"
-            echo "                    password: \"$psk\""
-        } >>"$PAK_DIR/res/netplan.yaml"
+        if [ "$PLATFORM" = "rg35xxplus" ]; then
+            {
+                echo "                \"$ssid\":"
+                echo "                    password: \"$psk\""
+            } >>"$PAK_DIR/res/netplan.yaml"
+        fi
     done <"$SDCARD_PATH/wifi.txt"
 
     if [ "$PLATFORM" = "miyoomini" ]; then
