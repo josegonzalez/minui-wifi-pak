@@ -201,7 +201,7 @@ write_config() {
     echo "Generating wpa_supplicant.conf..."
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
     if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.miyoo.tmpl"
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
     fi
 
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
@@ -339,7 +339,7 @@ wifi_off() {
 
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
     if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.miyoo.tmpl"
+        template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
     fi
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
