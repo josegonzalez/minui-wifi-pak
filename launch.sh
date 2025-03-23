@@ -271,7 +271,8 @@ write_config() {
     elif [ "$PLATFORM" = "tg5040" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
     elif [ "$PLATFORM" = "my282" ]; then
-        cp "$PAK_DIR/res/wpa_supplicant.conf.my282.tmpl" /config/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
         return 1
