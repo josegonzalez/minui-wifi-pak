@@ -56,6 +56,7 @@ main() {
         /customer/app/wpa_supplicant -B -D nl80211 -iwlan0 -c /appconfigs/wpa_supplicant.conf
         ln -sf /dev/null /tmp/udhcpc.log
         udhcpc -i wlan0 -s /etc/init.d/udhcpc.script &
+        iw dev wlan0 set power_save off
     elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
         if [ "$PLATFORM" = "my282" ]; then
             killall -9 wpa_supplicant 2>/dev/null || true
