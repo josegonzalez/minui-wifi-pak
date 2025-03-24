@@ -87,10 +87,8 @@ main() {
         ifconfig wlan0 down || true
         killall -15 wpa_supplicant || true
         killall -15 udhcpc || true
-        if ! ifconfig wlan0 up; then
-            echo "Failed to bring up wlan0"
-            return 1
-        fi
+        ifconfig wlan0 up || true
+        sleep 1
         if ! wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf; then
             echo "Failed to start wpa_supplicant"
             return 1
