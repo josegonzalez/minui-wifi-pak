@@ -65,12 +65,13 @@ main() {
 
         /customer/app/wpa_cli -i wlan0 reconnect
         iw dev wlan0 set power_save off
-    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ] || [ "$PLATFORM" = "trimuismart" ]; then
-        if [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "trimuismart" ]; then
+    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+        if [ "$PLATFORM" = "my282" ]; then
             killall -9 wpa_supplicant 2>/dev/null || true
         else
             /etc/init.d/wpa_supplicant stop || true
         fi
+
         if ! /etc/init.d/wpa_supplicant start; then
             echo "Failed to start wpa_supplicant via init.d"
         fi
@@ -81,6 +82,21 @@ main() {
         fi
         echo "Starting udhcpc in the background..."
         ( (udhcpc -i wlan0 -q &) &)
+    elif [ "$PLATFORM" = "trimuismart" ]; then
+        set -x
+        ifconfig wlan0 down || true
+        killall -15 wpa_supplicant || true
+        killall -15 udhcpc || true
+        if ! ifconfig wlan0 up; then
+            echo "Failed to bring up wlan0"
+            return 1
+        fi
+        if ! wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf; then
+            echo "Failed to start wpa_supplicant"
+            return 1
+        fi
+        udhcpc -i wlan0 &
+        set +x
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
         ip link set wlan0 up
         iw dev wlan0 set power_save off
