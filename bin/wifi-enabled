@@ -46,8 +46,10 @@ main() {
         fi
     fi
 
-    if ! pgrep wpa_supplicant; then
-        return 1
+    if [ "$PLATFORM" != "trimuismart" ]; then
+        if ! pgrep wpa_supplicant; then
+            return 1
+        fi
     fi
 
     # turn on the wlan0 interface on the trimuismart
