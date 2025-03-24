@@ -371,6 +371,8 @@ wifi_on() {
         sleep 1
     done
 
+    sleep 1
+    STATUS=$(cat "/sys/class/net/wlan0/operstate")
     if [ "$STATUS" != "up" ]; then
         show_message "Failed to start wifi!" 2
         return 1
