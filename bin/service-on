@@ -92,7 +92,7 @@ main() {
 
         ifconfig wlan0 up || true
         sleep 1
-        if ! /etc/init.d/wpa_supplicant start; then
+        if ! wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf; then
             echo "Failed to start wpa_supplicant"
             return 1
         fi
@@ -101,7 +101,7 @@ main() {
             echo "Failed to start wpa_supplicant"
             return 1
         fi
-        udhcpc -i wlan0 &
+        ( (udhcpc -i wlan0 -q &) &)
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
         ip link set wlan0 up
         iw dev wlan0 set power_save off
