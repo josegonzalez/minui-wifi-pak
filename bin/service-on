@@ -93,6 +93,11 @@ main() {
             echo "Failed to start wpa_supplicant"
             return 1
         fi
+
+        if ! pgrep wpa_supplicant; then
+            echo "Failed to start wpa_supplicant"
+            return 1
+        fi
         udhcpc -i wlan0 &
         set +x
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
