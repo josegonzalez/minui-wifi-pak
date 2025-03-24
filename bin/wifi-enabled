@@ -19,7 +19,7 @@ main() {
         SYSTEM_JSON_PATH="/config/system.json"
     fi
 
-    if [ -f "$SYSTEM_JSON_PATH" ]; then
+    if [ -f "$SYSTEM_JSON_PATH" ] && [ "$PLATFORM" != "trimuismart" ]; then
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
 
