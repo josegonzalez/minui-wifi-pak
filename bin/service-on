@@ -79,6 +79,7 @@ main() {
             echo "Failed to start wpa_supplicant"
             return 1
         fi
+        echo "Starting udhcpc in the background..."
         ( (udhcpc -i wlan0 -q &) &)
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
         ip link set wlan0 up
