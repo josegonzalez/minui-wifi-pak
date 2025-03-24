@@ -10,6 +10,7 @@ This pak is designed and tested on the following MinUI Platforms and devices:
 - `my282`: Miyoo A30
 - `rg35xxplus`: RG-35XX Plus, RG-34XX, RG-35XX H, RG-35XX SP
 - `tg5040`: Trimui Brick (formerly `tg3040`), Trimui Smart Pro
+- `trimuismart`: Trimui Smart
 
 Use the correct platform for your device.
 
@@ -41,7 +42,7 @@ To enable debug logging, create a file named `debug` in the `$SDCARD_PATH/.userd
 In the root of your SD card, place a `wifi.txt` file. This file should store network credentials for accessing your wifi networks.
 
 > [!NOTE]
-> In previous versions of the pak, this file could also be located at `/Tools/tg5040/Wifi.pak/wifi.txt`. The old path is still supported - though deprecated - and users should migrate to the new path. New versions of the pak will transparently migrate the `wifi.txt` to the root of the SD card.
+> In previous versions of the pak, this file could also be located at `/Tools/$PLATFORM/Wifi.pak/wifi.txt`. The old path is still supported - though deprecated - and users should migrate to the new path. New versions of the pak will transparently migrate the `wifi.txt` to the root of the SD card.
 
 Format:
 

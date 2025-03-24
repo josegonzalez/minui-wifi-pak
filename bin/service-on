@@ -65,7 +65,7 @@ main() {
 
         /customer/app/wpa_cli -i wlan0 reconnect
         iw dev wlan0 set power_save off
-    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ] || [ "$PLATFORM" = "trimuismart" ]; then
         if [ "$PLATFORM" = "my282" ]; then
             killall -9 wpa_supplicant 2>/dev/null || true
         else

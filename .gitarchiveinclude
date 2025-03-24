@@ -12,3 +12,6 @@ bin/rg35xxplus/minui-presenter
 bin/tg5040/minui-keyboard
 bin/tg5040/minui-list
 bin/tg5040/minui-presenter
+bin/trimuismart/minui-keyboard
+bin/trimuismart/minui-list
+bin/trimuismart/minui-presenter

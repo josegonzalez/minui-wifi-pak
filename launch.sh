@@ -202,7 +202,7 @@ will_start_on_boot() {
 write_config() {
     echo "Generating wpa_supplicant.conf..."
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
+    if [ -f "$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl" ]; then
         template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
     fi
 
@@ -281,7 +281,7 @@ write_config() {
         if [ "$has_passwords" = false ]; then
             rm -f /etc/netplan/01-netcfg.yaml
         fi
-    elif [ "$PLATFORM" = "tg5040" ]; then
+    elif [ "$PLATFORM" = "tg5040" ] || [ "$PLATFORM" = "trimuismart" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
     else
         show_message "$PLATFORM is not a supported platform" 2
@@ -474,7 +474,7 @@ main() {
         return 1
     fi
 
-    allowed_platforms="my282 tg5040 rg35xxplus miyoomini"
+    allowed_platforms="miyoomini my282 rg35xxplus tg5040 trimuismart"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 2
         return 1
