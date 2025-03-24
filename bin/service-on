@@ -89,7 +89,7 @@ main() {
         killall -15 udhcpc || true
         ifconfig wlan0 up || true
         sleep 1
-        if ! wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf; then
+        if ! /etc/init.d/wpa_supplicant start; then
             echo "Failed to start wpa_supplicant"
             return 1
         fi
