@@ -47,6 +47,11 @@ main() {
         return 1
     fi
 
+    # turn on the wlan0 interface on the trimuismart
+    if [ "$PLATFORM" = "trimuismart" ]; then
+        ifconfig wlan0 up || true
+    fi
+
     # check if the device is on
     if [ "$(cat /sys/class/net/wlan0/flags 2>/dev/null)" != "0x1003" ]; then
         return 1
