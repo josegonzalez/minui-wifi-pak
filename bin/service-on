@@ -83,10 +83,13 @@ main() {
         echo "Starting udhcpc in the background..."
         ( (udhcpc -i wlan0 -q &) &)
     elif [ "$PLATFORM" = "trimuismart" ]; then
-        set -x
-        ifconfig wlan0 down || true
-        killall -15 wpa_supplicant || true
-        killall -15 udhcpc || true
+        if pgrep wpa_supplicant; then
+            killall -15 wpa_supplicant || true
+        fi
+        if pgrep udhcpc; then
+            killall -15 udhcpc || true
+        fi
+
         ifconfig wlan0 up || true
         sleep 1
         if ! /etc/init.d/wpa_supplicant start; then
@@ -99,7 +102,6 @@ main() {
             return 1
         fi
         udhcpc -i wlan0 &
-        set +x
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
         ip link set wlan0 up
         iw dev wlan0 set power_save off
