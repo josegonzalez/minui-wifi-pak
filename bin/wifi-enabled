@@ -19,13 +19,16 @@ main() {
         SYSTEM_JSON_PATH="/config/system.json"
     fi
 
-    if [ -f "$SYSTEM_JSON_PATH" ] && [ "$PLATFORM" != "trimuismart" ]; then
+    if [ -f "$SYSTEM_JSON_PATH" ]; then
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
 
         wifi_enabled=0
         if [ -x /usr/trimui/bin/systemval ]; then
             wifi_enabled="$(/usr/trimui/bin/systemval wifi)"
+        elif [ "$PLATFORM" = "trimuismart" ]; then
+            # the trimuismart sometimes has malformed json
+            wifi_enabled="$(grep -o '"wifi":[^,]*' "$SYSTEM_JSON_PATH" | cut -d':' -f2 | tr -d ' ' | tr -d '}')"
         else
             chmod +x "$PAK_DIR/bin/$architecture/jq"
             wifi_enabled="$(jq '.wifi' "$SYSTEM_JSON_PATH")"
