@@ -1,8 +1,8 @@
 #!/bin/sh
+set -x
 PAK_DIR="$(dirname "$0")"
 PAK_NAME="$(basename "$PAK_DIR")"
 PAK_NAME="${PAK_NAME%.*}"
-[ -f "$USERDATA_PATH/$PAK_NAME/debug" ] && set -x
 
 rm -f "$LOGS_PATH/$PAK_NAME.txt"
 exec >>"$LOGS_PATH/$PAK_NAME.txt"
