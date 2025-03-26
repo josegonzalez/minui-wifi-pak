@@ -290,64 +290,15 @@ write_config() {
 
 wifi_off() {
     echo "Preparing to toggle wifi off..."
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
-        SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        if [ "$PLATFORM" = "miyoomini" ]; then
-            SYSTEM_JSON_PATH="/appconfigs/system.json"
-        elif [ "$PLATFORM" = "my282" ]; then
-            SYSTEM_JSON_PATH="/config/system.json"
-        fi
 
-        [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
-        [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
-
-        if [ -x /usr/trimui/bin/systemval ]; then
-            /usr/trimui/bin/systemval wifi 0
-        else
-            chmod +x "$PAK_DIR/bin/$architecture/jq"
-            jq '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
-            mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
-        fi
+    if ! write_config; then
+        return 1
     fi
 
-    if pgrep wpa_supplicant; then
-        echo "Stopping wpa_supplicant..."
-        /etc/init.d/wpa_supplicant stop || true
-        systemctl stop wpa_supplicant || true
-        killall -9 wpa_supplicant 2>/dev/null || true
+    if ! service-off; then
+        return 1
     fi
-
-    if [ "$PLATFORM" = "miyoomini" ]; then
-        killall udhcpc 2>/dev/null || true
-    fi
-
-    status="$(cat /sys/class/net/wlan0/flags)"
-    if [ "$status" = "0x1003" ]; then
-        echo "Marking wlan0 interface down..."
-        ifconfig wlan0 down || true
-    fi
-
-    if command -v rfkill >/dev/null 2>&1; then
-        if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
-            echo "Blocking wireless..."
-            rfkill block wifi 2>/dev/null || true
-        fi
-    fi
-
-    if [ -f /customer/app/axp_test ]; then
-        /customer/app/axp_test wifioff
-    fi
-
-    template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
-    fi
-    cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
-    if [ "$PLATFORM" = "rg35xxplus" ]; then
-        rm -f /etc/netplan/01-netcfg.yaml
-        netplan apply
-        systemctl stop systemd-networkd || true
-    fi
+    return 0
 }
 
 wifi_on() {
