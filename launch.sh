@@ -137,11 +137,6 @@ password_screen() {
         return 1
     fi
 
-    if [ -z "$password" ]; then
-        show_message "Password cannot be empty" 2
-        return 1
-    fi
-
     touch "$SDCARD_PATH/wifi.txt"
 
     if grep -q "^$SSID:" "$SDCARD_PATH/wifi.txt" 2>/dev/null; then
@@ -245,7 +240,7 @@ write_config() {
 
         ssid="$(echo "$line" | cut -d: -f1 | xargs)"
         psk="$(echo "$line" | cut -d: -f2- | xargs)"
-        if [ -z "$ssid" ] || [ -z "$psk" ]; then
+        if [ -z "$ssid" ]; then
             continue
         fi
 
@@ -254,10 +249,14 @@ write_config() {
         {
             echo "network={"
             echo "    ssid=\"$ssid\""
-            echo "    psk=\"$psk\""
             if [ "$priority_used" = false ]; then
                 echo "    priority=1"
                 priority_used=true
+            fi
+            if [ -z "$psk" ]; then
+                echo "    key_mgmt=NONE"
+            else
+                echo "    psk=\"$psk\""
             fi
             echo "}"
         } >>"$PAK_DIR/res/wpa_supplicant.conf"
