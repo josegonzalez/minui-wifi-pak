@@ -99,7 +99,7 @@ main_screen() {
     sed -i "s/NETWORK_IP_ADDRESS/$ip_address/" "$minui_list_file"
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --item-key settings --file "$minui_list_file" --format json --title "Wifi Configuration" --write-location /tmp/minui-output --write-value state
+    minui-list --item-key settings --file "$minui_list_file" --format json --cancel-text "EXIT" --title "Wifi Configuration" --write-location /tmp/minui-output --write-value state
 }
 
 networks_screen() {
