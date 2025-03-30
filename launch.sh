@@ -85,8 +85,16 @@ main_screen() {
     fi
 
     cp "$template_file" "$minui_list_file"
-    sed -i "s/IS_ENABLED/$enabled/" "$minui_list_file"
-    sed -i "s/IS_START_ON_BOOT/$start_on_boot/" "$minui_list_file"
+    if [ "$enabled" = true ]; then
+        sed -i "s/IS_ENABLED/1/" "$minui_list_file"
+    else
+        sed -i "s/IS_ENABLED/0/" "$minui_list_file"
+    fi
+    if [ "$start_on_boot" = true ]; then
+        sed -i "s/IS_START_ON_BOOT/1/" "$minui_list_file"
+    else
+        sed -i "s/IS_START_ON_BOOT/0/" "$minui_list_file"
+    fi
     sed -i "s/NETWORK_SSID/$ssid/" "$minui_list_file"
     sed -i "s/NETWORK_IP_ADDRESS/$ip_address/" "$minui_list_file"
 
