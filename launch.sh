@@ -474,7 +474,13 @@ main() {
         output="$(cat /tmp/minui-output)"
         # todo: get new vs old state of `Enable` and `Start on boot` and write them out
         # todo: get selection from output and handle the different cases
-        selection="$(echo "$output" | jq -r '.selected')"
+        selected_index="$(echo "$output" | jq -r '.selected')"
+        echo "selected_index: $selected_index"
+        # get the name field of the selected setting
+        # the json looks like this:
+        # {"settings":[{"name":"Connect to network"}]}
+        # so we need to get the name field of the `selected` index
+        selection="$(echo "$output" | jq -r ".settings[$selected_index].name")"
         echo "selection: $selection"
 
         if echo "$selection" | grep -q "^Connect to network$"; then
@@ -483,15 +489,21 @@ main() {
                 break
             fi
         elif echo "$selection" | grep -q "^Enable$"; then
-            show_message "Updating wifi config..." forever
-            if ! write_config; then
-                show_message "Failed to write config!" 2
-            fi
+            selected_option_index="$(echo "$output" | jq -r ".settings[$selected_index].selected")"
+            selected_option="$(echo "$output" | jq -r ".settings[$selected_index].options[$selected_option_index]")"
 
-            show_message "Enabling wifi..." forever
-            if ! service-on; then
-                show_message "Failed to enable wifi!" 2
-                continue
+            if [ "$selected_option" = "true" ]; then
+                show_message "Enabling wifi..." forever
+                if ! wifi_on; then
+                    show_message "Failed to enable wifi!" 2
+                    continue
+                fi
+            else
+                show_message "Disabling wifi..." forever
+                if ! wifi_off; then
+                    show_message "Failed to disable wifi!" 2
+                    continue
+                fi
             fi
             sleep 2
         elif echo "$selection" | grep -q "^Refresh connection$"; then
@@ -518,18 +530,25 @@ main() {
                 show_message "Failed to stop wifi!" 2
                 return 1
             fi
-        elif echo "$selection" | grep -q "^Toggle start on boot$"; then
-            if will_start_on_boot; then
-                show_message "Disabling start on boot..." forever
-                if ! disable_start_on_boot; then
-                    show_message "Failed to disable start on boot!" 2
-                    continue
+        elif echo "$selection" | grep -q "^Start on boot$"; then
+            selected_option_index="$(echo "$output" | jq -r ".settings[$selected_index].selected")"
+            selected_option="$(echo "$output" | jq -r ".settings[$selected_index].options[$selected_option_index]")"
+
+            if [ "$selected_option" = "true" ]; then
+                if ! will_start_on_boot; then
+                    show_message "Enabling start on boot..." forever
+                    if ! enable_start_on_boot; then
+                        show_message "Failed to enable start on boot!" 2
+                        continue
+                    fi
                 fi
             else
-                show_message "Enabling start on boot..." forever
-                if ! enable_start_on_boot; then
-                    show_message "Failed to enable start on boot!" 2
-                    continue
+                if will_start_on_boot; then
+                    show_message "Disabling start on boot..." forever
+                    if ! disable_start_on_boot; then
+                        show_message "Failed to disable start on boot!" 2
+                        continue
+                    fi
                 fi
             fi
         fi
