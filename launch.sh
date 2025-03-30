@@ -501,16 +501,20 @@ main() {
             selected_option="$(echo "$output" | jq -r ".settings[$selected_index].options[$selected_option_index]")"
 
             if [ "$selected_option" = "true" ]; then
-                show_message "Enabling wifi..." forever
-                if ! wifi_on; then
-                    show_message "Failed to enable wifi!" 2
-                    continue
+                if wifi-enabled; then
+                    show_message "Enabling wifi..." forever
+                    if ! wifi_on; then
+                        show_message "Failed to enable wifi!" 2
+                        continue
+                    fi
                 fi
             else
-                show_message "Disabling wifi..." forever
-                if ! wifi_off; then
-                    show_message "Failed to disable wifi!" 2
-                    continue
+                if ! wifi-enabled; then
+                    show_message "Disabling wifi..." forever
+                    if ! wifi_off; then
+                        show_message "Failed to disable wifi!" 2
+                        continue
+                    fi
                 fi
             fi
             sleep 2
