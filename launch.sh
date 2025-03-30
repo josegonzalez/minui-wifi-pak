@@ -382,7 +382,6 @@ forget_network_loop() {
 
         # some sort of error and then go back to main screen
         if [ "$exit_code" -ne 0 ]; then
-            show_message "Error selecting a network" 2
             next_screen="main"
             break
         fi
