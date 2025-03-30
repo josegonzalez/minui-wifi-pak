@@ -119,7 +119,7 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --write-location /tmp/minui-output
+    minui-list --file "$minui_list_file" --format text --confirm-text "FORGET" --title "Wifi Networks" --write-location /tmp/minui-output
 }
 
 saved_networks_screen() {
