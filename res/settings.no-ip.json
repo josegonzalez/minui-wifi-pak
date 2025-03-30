@@ -1,0 +1,46 @@
+{
+    "settings": [
+        {
+            "name": "Enable",
+            "options": ["false", "true"],
+            "selected": IS_ENABLED,
+            "features": {
+                "confirm_text": "SAVE"
+            }
+        },
+        {
+            "name": "Start on boot",
+            "options": ["false", "true"],
+            "selected": IS_START_ON_BOOT,
+            "features": {
+                "confirm_text": "SAVE"
+            }
+        },
+        {
+            "name": "Forget a network",
+            "features": {
+                "confirm_text": "FORGET"
+            }
+        },
+        {
+            "name": "Connect to network",
+            "features": {
+                "confirm_text": "CONNECT"
+            }
+        },
+        {
+            "name": "Refresh connection",
+            "features": {
+                "confirm_text": "REFRESH"
+            }
+        },
+        {
+            "name": "SSID",
+            "options": ["NETWORK_SSID"],
+            "selected": 0,
+            "features": {
+                "unselectable": true
+            }
+        }
+    ]
+}

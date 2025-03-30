@@ -21,86 +21,95 @@ export HOME="$USERDATA_PATH/$PAK_NAME"
 export LD_LIBRARY_PATH="$PAK_DIR/lib/$PLATFORM:$PAK_DIR/lib:$LD_LIBRARY_PATH"
 export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PATH"
 
+get_ssid_and_ip() {
+    enabled="$(cat /sys/class/net/wlan0/operstate)"
+    if [ "$enabled" != "up" ]; then
+        return
+    fi
+
+    ssid=""
+    ip_address=""
+
+    count=0
+    while true; do
+        count=$((count + 1))
+        if [ "$count" -gt 5 ]; then
+            break
+        fi
+
+        ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
+        ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
+        if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
+            break
+        fi
+        sleep 1
+    done
+
+    if [ -z "$ssid" ]; then
+        ssid="N/A"
+    fi
+    if [ -z "$ip_address" ]; then
+        ip_address="N/A"
+    fi
+
+    printf "%s\t%s" "$ssid" "$ip_address"
+}
+
 main_screen() {
     minui_list_file="/tmp/minui-list"
-    rm -f "$minui_list_file"
+    rm -f "$minui_list_file" "/tmp/minui-output"
     touch "$minui_list_file"
+
+    template_file="$PAK_DIR/res/settings.json"
 
     start_on_boot=false
     if will_start_on_boot; then
         start_on_boot=true
     fi
 
-    echo "Enabled: false" >>"$minui_list_file"
-    echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-    echo "Enable" >>"$minui_list_file"
-    echo "Toggle start on boot" >>"$minui_list_file"
-
-    ip_address="N/A"
+    enabled=false
+    ssid_and_ip=""
     if wifi-enabled; then
-        echo "Enabled: true" >"$minui_list_file"
-        echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-        echo "Disable" >>"$minui_list_file"
-        echo "Connect to network" >>"$minui_list_file"
-        echo "Toggle start on boot" >>"$minui_list_file"
+        enabled=true
+        template_file="$PAK_DIR/res/settings.enabled.json"
     fi
 
-    ssid="N/A"
-    ip_address="N/A"
-    enabled="$(cat /sys/class/net/wlan0/operstate)"
-    if [ "$enabled" = "up" ]; then
-        ssid=""
-        ip_address=""
-
-        count=0
-        while true; do
-            count=$((count + 1))
-            if [ "$count" -gt 5 ]; then
-                break
-            fi
-
-            ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
-            ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
-            if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
-                break
-            fi
-            sleep 1
-        done
-
-        if [ -z "$ssid" ]; then
-            ssid="N/A"
-        fi
-        if [ -z "$ip_address" ]; then
-            ip_address="N/A"
-        fi
-
-        if [ "$ssid" != "N/A" ] && [ "$ip_address" != "N/A" ]; then
-            echo "Enabled: true" >"$minui_list_file"
-            echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-            echo "SSID: $ssid" >>"$minui_list_file"
-            if [ "$ip_address" = "N/A" ]; then
-                echo "IP: N/A" >>"$minui_list_file"
-                echo "Refresh connection" >>"$minui_list_file"
-            else
-                echo "IP: $ip_address" >>"$minui_list_file"
-            fi
-            echo "Disable" >>"$minui_list_file"
-            echo "Connect to network" >>"$minui_list_file"
-            echo "Toggle start on boot" >>"$minui_list_file"
+    ssid_and_ip="$(get_ssid_and_ip)"
+    if [ -n "$ssid_and_ip" ]; then
+        ssid="$(echo "$ssid_and_ip" | awk 'BEGIN { OFS="\t" } {print $1}')"
+        ip_address="$(echo "$ssid_and_ip" | awk 'BEGIN { OFS="\t" } {print $2}')"
+        template_file="$PAK_DIR/res/settings.connected.json"
+        if [ "$ip_address" = "N/A" ]; then
+            template_file="$PAK_DIR/res/settings.no-ip.json"
         fi
     fi
+
+    cp "$template_file" "$minui_list_file"
+    if [ "$enabled" = true ]; then
+        sed -i "s/IS_ENABLED/1/" "$minui_list_file"
+    else
+        sed -i "s/IS_ENABLED/0/" "$minui_list_file"
+    fi
+    if [ "$start_on_boot" = true ]; then
+        sed -i "s/IS_START_ON_BOOT/1/" "$minui_list_file"
+    else
+        sed -i "s/IS_START_ON_BOOT/0/" "$minui_list_file"
+    fi
+    sed -i "s/NETWORK_SSID/$ssid/" "$minui_list_file"
+    sed -i "s/NETWORK_IP_ADDRESS/$ip_address/" "$minui_list_file"
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Configuration"
+    minui-list --item-key settings --file "$minui_list_file" --format json --cancel-text "EXIT" --title "Wifi Configuration" --write-location /tmp/minui-output --write-value state
 }
 
 networks_screen() {
-    show_message "Scanning for networks..." 2
+    minui_list_file="/tmp/minui-list"
+    rm -f "$minui_list_file" "/tmp/minui-output"
+    touch "$minui_list_file"
+
+    show_message "Scanning for networks" forever
     DELAY=30
 
-    minui_list_file="/tmp/minui-list"
-    rm -f "$minui_list_file"
-    touch "$minui_list_file"
     for i in $(seq 1 "$DELAY"); do
         iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
         if [ -s "$minui_list_file" ]; then
@@ -110,12 +119,34 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Networks"
+    minui-list --file "$minui_list_file" --format text --confirm-text "FORGET" --title "Wifi Networks" --write-location /tmp/minui-output
+}
+
+saved_networks_screen() {
+    minui_list_file="/tmp/minui-list"
+    rm -f "$minui_list_file" "/tmp/minui-output"
+    touch "$minui_list_file"
+
+    if [ ! -f "$SDCARD_PATH/wifi.txt" ]; then
+        show_message "No wifi.txt file found" 2
+        return 1
+    fi
+
+    sed '/^#/d; /^$/d; s/:.*//' "$SDCARD_PATH/wifi.txt" >"$minui_list_file"
+
+    if [ ! -s "$minui_list_file" ]; then
+        show_message "No saved networks found" 2
+        return 1
+    fi
+
+    killall minui-presenter >/dev/null 2>&1 || true
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --write-location /tmp/minui-output
 }
 
 password_screen() {
     SSID="$1"
 
+    rm -f "/tmp/minui-output"
     touch "$SDCARD_PATH/wifi.txt"
 
     initial_password=""
@@ -124,7 +155,7 @@ password_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    password="$(minui-keyboard --header "Enter Password" --initial-value "$initial_password")"
+    minui-keyboard --header "Enter Password" --initial-value "$initial_password" --write-location /tmp/minui-output
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
@@ -134,6 +165,12 @@ password_screen() {
     fi
     if [ "$exit_code" -ne 0 ]; then
         show_message "Error entering password" 2
+        return 1
+    fi
+
+    password="$(cat /tmp/minui-output)"
+    if [ -z "$password" ]; then
+        show_message "Password cannot be empty" 2
         return 1
     fi
 
@@ -195,7 +232,9 @@ will_start_on_boot() {
 }
 
 write_config() {
-    echo "Generating wpa_supplicant.conf..."
+    ENABLING_WIFI="${1:-true}"
+
+    echo "Generating wpa_supplicant.conf"
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
     if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
         template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
@@ -203,7 +242,7 @@ write_config() {
 
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
-        echo "Generating netplan.yaml..."
+        echo "Generating netplan.yaml"
         cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
     fi
 
@@ -219,54 +258,56 @@ write_config() {
         return 1
     fi
 
-    has_passwords=false
-    priority_used=false
-    echo "" >>"$SDCARD_PATH/wifi.txt"
-    while read -r line; do
-        line="$(echo "$line" | xargs)"
-        if [ -z "$line" ]; then
-            continue
-        fi
-
-        # skip if line starts with a comment
-        if echo "$line" | grep -q "^#"; then
-            continue
-        fi
-
-        # skip if line is not in the format "ssid:psk"
-        if ! echo "$line" | grep -q ":"; then
-            continue
-        fi
-
-        ssid="$(echo "$line" | cut -d: -f1 | xargs)"
-        psk="$(echo "$line" | cut -d: -f2- | xargs)"
-        if [ -z "$ssid" ]; then
-            continue
-        fi
-
-        has_passwords=true
-
-        {
-            echo "network={"
-            echo "    ssid=\"$ssid\""
-            if [ "$priority_used" = false ]; then
-                echo "    priority=1"
-                priority_used=true
+    if [ "$ENABLING_WIFI" = "true" ]; then
+        has_passwords=false
+        priority_used=false
+        echo "" >>"$SDCARD_PATH/wifi.txt"
+        while read -r line; do
+            line="$(echo "$line" | xargs)"
+            if [ -z "$line" ]; then
+                continue
             fi
-            if [ -z "$psk" ]; then
-                echo "    key_mgmt=NONE"
-            else
-                echo "    psk=\"$psk\""
+
+            # skip if line starts with a comment
+            if echo "$line" | grep -q "^#"; then
+                continue
             fi
-            echo "}"
-        } >>"$PAK_DIR/res/wpa_supplicant.conf"
-        if [ "$PLATFORM" = "rg35xxplus" ]; then
+
+            # skip if line is not in the format "ssid:psk"
+            if ! echo "$line" | grep -q ":"; then
+                continue
+            fi
+
+            ssid="$(echo "$line" | cut -d: -f1 | xargs)"
+            psk="$(echo "$line" | cut -d: -f2- | xargs)"
+            if [ -z "$ssid" ]; then
+                continue
+            fi
+
+            has_passwords=true
+
             {
-                echo "                \"$ssid\":"
-                echo "                    password: \"$psk\""
-            } >>"$PAK_DIR/res/netplan.yaml"
-        fi
-    done <"$SDCARD_PATH/wifi.txt"
+                echo "network={"
+                echo "    ssid=\"$ssid\""
+                if [ "$priority_used" = false ]; then
+                    echo "    priority=1"
+                    priority_used=true
+                fi
+                if [ -z "$psk" ]; then
+                    echo "    key_mgmt=NONE"
+                else
+                    echo "    psk=\"$psk\""
+                fi
+                echo "}"
+            } >>"$PAK_DIR/res/wpa_supplicant.conf"
+            if [ "$PLATFORM" = "rg35xxplus" ]; then
+                {
+                    echo "                \"$ssid\":"
+                    echo "                    password: \"$psk\""
+                } >>"$PAK_DIR/res/netplan.yaml"
+            fi
+        done <"$SDCARD_PATH/wifi.txt"
+    fi
 
     if [ "$PLATFORM" = "miyoomini" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
@@ -289,71 +330,22 @@ write_config() {
 }
 
 wifi_off() {
-    echo "Preparing to toggle wifi off..."
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
-        SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
-        if [ "$PLATFORM" = "miyoomini" ]; then
-            SYSTEM_JSON_PATH="/appconfigs/system.json"
-        elif [ "$PLATFORM" = "my282" ]; then
-            SYSTEM_JSON_PATH="/config/system.json"
-        fi
+    echo "Preparing to toggle wifi off"
 
-        [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
-        [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
-
-        if [ -x /usr/trimui/bin/systemval ]; then
-            /usr/trimui/bin/systemval wifi 0
-        else
-            chmod +x "$PAK_DIR/bin/$architecture/jq"
-            jq '.wifi = 0' "$SYSTEM_JSON_PATH" >"/tmp/system.json.tmp"
-            mv "/tmp/system.json.tmp" "$SYSTEM_JSON_PATH"
-        fi
+    if ! write_config "false"; then
+        return 1
     fi
 
-    if pgrep wpa_supplicant; then
-        echo "Stopping wpa_supplicant..."
-        /etc/init.d/wpa_supplicant stop || true
-        systemctl stop wpa_supplicant || true
-        killall -9 wpa_supplicant 2>/dev/null || true
+    if ! service-off; then
+        return 1
     fi
-
-    if [ "$PLATFORM" = "miyoomini" ]; then
-        killall udhcpc 2>/dev/null || true
-    fi
-
-    status="$(cat /sys/class/net/wlan0/flags)"
-    if [ "$status" = "0x1003" ]; then
-        echo "Marking wlan0 interface down..."
-        ifconfig wlan0 down || true
-    fi
-
-    if command -v rfkill >/dev/null 2>&1; then
-        if [ ! -f /sys/class/rfkill/rfkill0/state ]; then
-            echo "Blocking wireless..."
-            rfkill block wifi 2>/dev/null || true
-        fi
-    fi
-
-    if [ -f /customer/app/axp_test ]; then
-        /customer/app/axp_test wifioff
-    fi
-
-    template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
-        template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
-    fi
-    cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
-    if [ "$PLATFORM" = "rg35xxplus" ]; then
-        rm -f /etc/netplan/01-netcfg.yaml
-        netplan apply
-        systemctl stop systemd-networkd || true
-    fi
+    return 0
 }
 
 wifi_on() {
-    echo "Preparing to toggle wifi on..."
+    echo "Preparing to toggle wifi on"
 
-    if ! write_config; then
+    if ! write_config "true"; then
         return 1
     fi
 
@@ -371,23 +363,70 @@ wifi_on() {
     done
 
     if [ "$STATUS" != "up" ]; then
-        show_message "Failed to start wifi!" 2
+        show_message "Failed to start wifi" 2
         return 1
     fi
 }
 
+forget_network_loop() {
+    next_screen="main"
+    while true; do
+        saved_networks_screen
+        exit_code=$?
+        # exit codes: 2 = back button (go back to main screen)
+        if [ "$exit_code" -eq 2 ]; then
+            break
+        fi
+
+        # exit codes: 3 = menu button (exit out of the app)
+        if [ "$exit_code" -eq 3 ]; then
+            next_screen="exit"
+            break
+        fi
+
+        # some sort of error and then go back to main screen
+        if [ "$exit_code" -ne 0 ]; then
+            next_screen="main"
+            break
+        fi
+
+        SSID="$(cat /tmp/minui-output)"
+        # remove the SSID from the wifi.txt file
+        sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
+        if ! write_config "true"; then
+            return 1
+        fi
+
+        show_message "Refreshing connection" forever
+
+        if ! wifi_off; then
+            show_message "Failed to disable wifi" 2
+            return 1
+        fi
+
+        if ! wifi_on; then
+            show_message "Failed to enable wifi" 2
+            return 1
+        fi
+        break
+    done
+
+    killall minui-presenter >/dev/null 2>&1 || true
+    echo "$next_screen"
+}
+
 network_loop() {
     if ! wifi-enabled; then
-        show_message "Enabling wifi..." forever
+        show_message "Enabling wifi" forever
         if ! service-on; then
-            show_message "Failed to enable wifi!" 2
+            show_message "Failed to enable wifi" 2
             return 1
         fi
     fi
 
     next_screen="main"
     while true; do
-        SSID="$(networks_screen)"
+        networks_screen
         exit_code=$?
         # exit codes: 2 = back button (go back to main screen)
         if [ "$exit_code" -eq 2 ]; then
@@ -407,6 +446,7 @@ network_loop() {
             break
         fi
 
+        SSID="$(cat /tmp/minui-output)"
         password_screen "$SSID"
         exit_code=$?
         # exit codes: 2 = back button (go back to networks screen)
@@ -424,16 +464,16 @@ network_loop() {
             continue
         fi
 
-        show_message "Connecting to $SSID..." forever
+        show_message "Connecting to $SSID" forever
         if ! wifi_on; then
-            show_message "Failed to start wifi!" 2
+            show_message "Failed to start wifi" 2
             return 1
         fi
 
-        killall minui-presenter >/dev/null 2>&1 || true
         break
     done
 
+    killall minui-presenter >/dev/null 2>&1 || true
     echo "$next_screen"
 }
 
@@ -504,67 +544,93 @@ main() {
     chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
 
     while true; do
-        selection="$(main_screen)"
+        main_screen
         exit_code=$?
         # exit codes: 2 = back button, 3 = menu button
         if [ "$exit_code" -ne 0 ]; then
             break
         fi
 
-        if echo "$selection" | grep -q "^Connect to network$"; then
+        output="$(cat /tmp/minui-output)"
+        # todo: get new vs old state of `Enable` and `Start on boot` and write them out
+        # todo: get selection from output and handle the different cases
+        selected_index="$(echo "$output" | jq -r '.selected')"
+        echo "selected_index: $selected_index"
+        # get the name field of the selected setting
+        # the json looks like this:
+        # {"settings":[{"name":"Connect to network"}]}
+        # so we need to get the name field of the `selected` index
+        selection="$(echo "$output" | jq -r ".settings[$selected_index].name")"
+        echo "selection: $selection"
+
+        if [ "$selection" = "Enable" ] || [ "$selection" = "Start on boot" ]; then
+            selected_option_index="$(echo "$output" | jq -r ".settings[0].selected")"
+            selected_option="$(echo "$output" | jq -r ".settings[0].options[$selected_option_index]")"
+
+            if [ "$selected_option" = "true" ]; then
+                if ! wifi-enabled; then
+                    show_message "Enabling wifi" forever
+                    if ! wifi_on; then
+                        show_message "Failed to enable wifi" 2
+                        continue
+                    fi
+                fi
+            else
+                if wifi-enabled; then
+                    show_message "Disabling wifi" forever
+                    if ! wifi_off; then
+                        show_message "Failed to disable wifi" 2
+                        continue
+                    fi
+                fi
+            fi
+
+            selected_option_index="$(echo "$output" | jq -r ".settings[1].selected")"
+            selected_option="$(echo "$output" | jq -r ".settings[1].options[$selected_option_index]")"
+
+            if [ "$selected_option" = "true" ]; then
+                if ! will_start_on_boot; then
+                    show_message "Enabling start on boot" forever
+                    if ! enable_start_on_boot; then
+                        show_message "Failed to enable start on boot" 2
+                        continue
+                    fi
+                fi
+            else
+                if will_start_on_boot; then
+                    show_message "Disabling start on boot" forever
+                    if ! disable_start_on_boot; then
+                        show_message "Failed to disable start on boot" 2
+                        continue
+                    fi
+                fi
+            fi
+        elif echo "$selection" | grep -q "^Connect to network$"; then
             next_screen="$(network_loop)"
             if [ "$next_screen" = "exit" ]; then
                 break
             fi
-        elif echo "$selection" | grep -q "^Enable$"; then
-            show_message "Updating wifi config..." forever
-            if ! write_config; then
-                show_message "Failed to write config!" 2
+        elif echo "$selection" | grep -q "^Forget a network$"; then
+            next_screen="$(forget_network_loop)"
+            if [ "$next_screen" = "exit" ]; then
+                break
             fi
-
-            show_message "Enabling wifi..." forever
-            if ! service-on; then
-                show_message "Failed to enable wifi!" 2
-                continue
-            fi
-            sleep 2
         elif echo "$selection" | grep -q "^Refresh connection$"; then
-            show_message "Disconnecting from wifi..." forever
+            show_message "Disconnecting from wifi" forever
             if ! wifi_off; then
-                show_message "Failed to stop wifi!" 2
+                show_message "Failed to stop wifi" 2
                 return 1
             fi
 
-            show_message "Updating wifi config..." forever
-            if ! write_config; then
-                show_message "Failed to write config!" 2
+            show_message "Updating wifi config" forever
+            if ! write_config "true"; then
+                show_message "Failed to write config" 2
             fi
 
-            show_message "Refreshing connection..." forever
+            show_message "Refreshing connection" forever
             if ! service-on; then
-                show_message "Failed to enable wifi!" 2
+                show_message "Failed to enable wifi" 2
                 continue
-            fi
-            sleep 2
-        elif echo "$selection" | grep -q "^Disable$"; then
-            show_message "Disconnecting from wifi..." forever
-            if ! wifi_off; then
-                show_message "Failed to stop wifi!" 2
-                return 1
-            fi
-        elif echo "$selection" | grep -q "^Toggle start on boot$"; then
-            if will_start_on_boot; then
-                show_message "Disabling start on boot..." forever
-                if ! disable_start_on_boot; then
-                    show_message "Failed to disable start on boot!" 2
-                    continue
-                fi
-            else
-                show_message "Enabling start on boot..." forever
-                if ! enable_start_on_boot; then
-                    show_message "Failed to enable start on boot!" 2
-                    continue
-                fi
             fi
         fi
     done

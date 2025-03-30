@@ -1,0 +1,26 @@
+{
+    "settings": [
+        {
+            "name": "Enable",
+            "options": ["false", "true"],
+            "selected": IS_ENABLED,
+            "features": {
+                "confirm_text": "SAVE"
+            }
+        },
+        {
+            "name": "Start on boot",
+            "options": ["false", "true"],
+            "selected": IS_START_ON_BOOT,
+            "features": {
+                "confirm_text": "SAVE"
+            }
+        },
+        {
+            "name": "Forget a network",
+            "features": {
+                "confirm_text": "FORGET"
+            }
+        }
+    ]
+}
