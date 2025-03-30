@@ -359,7 +359,7 @@ wifi_on() {
     done
 
     if [ "$STATUS" != "up" ]; then
-        show_message "Failed to start wifi!" 2
+        show_message "Failed to start wifi" 2
         return 1
     fi
 }
@@ -415,7 +415,7 @@ network_loop() {
     if ! wifi-enabled; then
         show_message "Enabling wifi" forever
         if ! service-on; then
-            show_message "Failed to enable wifi!" 2
+            show_message "Failed to enable wifi" 2
             return 1
         fi
     fi
@@ -462,7 +462,7 @@ network_loop() {
 
         show_message "Connecting to $SSID" forever
         if ! wifi_on; then
-            show_message "Failed to start wifi!" 2
+            show_message "Failed to start wifi" 2
             return 1
         fi
 
@@ -567,7 +567,7 @@ main() {
                 if ! wifi-enabled; then
                     show_message "Enabling wifi" forever
                     if ! wifi_on; then
-                        show_message "Failed to enable wifi!" 2
+                        show_message "Failed to enable wifi" 2
                         continue
                     fi
                 fi
@@ -575,7 +575,7 @@ main() {
                 if wifi-enabled; then
                     show_message "Disabling wifi" forever
                     if ! wifi_off; then
-                        show_message "Failed to disable wifi!" 2
+                        show_message "Failed to disable wifi" 2
                         continue
                     fi
                 fi
@@ -588,7 +588,7 @@ main() {
                 if ! will_start_on_boot; then
                     show_message "Enabling start on boot" forever
                     if ! enable_start_on_boot; then
-                        show_message "Failed to enable start on boot!" 2
+                        show_message "Failed to enable start on boot" 2
                         continue
                     fi
                 fi
@@ -596,7 +596,7 @@ main() {
                 if will_start_on_boot; then
                     show_message "Disabling start on boot" forever
                     if ! disable_start_on_boot; then
-                        show_message "Failed to disable start on boot!" 2
+                        show_message "Failed to disable start on boot" 2
                         continue
                     fi
                 fi
@@ -614,18 +614,18 @@ main() {
         elif echo "$selection" | grep -q "^Refresh connection$"; then
             show_message "Disconnecting from wifi" forever
             if ! wifi_off; then
-                show_message "Failed to stop wifi!" 2
+                show_message "Failed to stop wifi" 2
                 return 1
             fi
 
             show_message "Updating wifi config" forever
             if ! write_config; then
-                show_message "Failed to write config!" 2
+                show_message "Failed to write config" 2
             fi
 
             show_message "Refreshing connection" forever
             if ! service-on; then
-                show_message "Failed to enable wifi!" 2
+                show_message "Failed to enable wifi" 2
                 continue
             fi
         fi
