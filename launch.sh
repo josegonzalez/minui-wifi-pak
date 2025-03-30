@@ -517,7 +517,6 @@ main() {
                     fi
                 fi
             fi
-            sleep 2
         elif echo "$selection" | grep -q "^Refresh connection$"; then
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
@@ -535,7 +534,6 @@ main() {
                 show_message "Failed to enable wifi!" 2
                 continue
             fi
-            sleep 2
         elif echo "$selection" | grep -q "^Disable$"; then
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
