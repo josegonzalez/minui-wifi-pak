@@ -552,16 +552,8 @@ main() {
         fi
 
         output="$(cat /tmp/minui-output)"
-        # todo: get new vs old state of `Enable` and `Start on boot` and write them out
-        # todo: get selection from output and handle the different cases
         selected_index="$(echo "$output" | jq -r '.selected')"
-        echo "selected_index: $selected_index"
-        # get the name field of the selected setting
-        # the json looks like this:
-        # {"settings":[{"name":"Connect to network"}]}
-        # so we need to get the name field of the `selected` index
         selection="$(echo "$output" | jq -r ".settings[$selected_index].name")"
-        echo "selection: $selection"
 
         if [ "$selection" = "Enable" ] || [ "$selection" = "Start on boot" ]; then
             selected_option_index="$(echo "$output" | jq -r ".settings[0].selected")"
