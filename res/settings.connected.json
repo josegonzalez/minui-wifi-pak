@@ -23,13 +23,17 @@
             }
         },
         {
-            "name": "SSID: NETWORK_SSID",
+            "name": "SSID",
+            "options": ["NETWORK_SSID"],
+            "selected": 0,
             "features": {
                 "unselectable": true
             }
         },
         {
-            "name": "IP Address: NETWORK_IP_ADDRESS",
+            "name": "IP Address",
+            "options": ["NETWORK_IP_ADDRESS"],
+            "selected": 0,
             "features": {
                 "unselectable": true
             }

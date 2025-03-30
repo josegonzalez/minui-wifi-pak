@@ -35,7 +35,9 @@
             }
         },
         {
-            "name": "SSID: NETWORK_SSID",
+            "name": "SSID",
+            "options": ["NETWORK_SSID"],
+            "selected": 0,
             "features": {
                 "unselectable": true
             }
