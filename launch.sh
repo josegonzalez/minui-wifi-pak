@@ -496,9 +496,9 @@ main() {
             if [ "$next_screen" = "exit" ]; then
                 break
             fi
-        elif echo "$selection" | grep -q "^Enable$"; then
-            selected_option_index="$(echo "$output" | jq -r ".settings[$selected_index].selected")"
-            selected_option="$(echo "$output" | jq -r ".settings[$selected_index].options[$selected_option_index]")"
+        elif [ "$selection" = "Enable" ] || [ "$selection" = "Start on boot" ]; then
+            selected_option_index="$(echo "$output" | jq -r ".settings[0].selected")"
+            selected_option="$(echo "$output" | jq -r ".settings[0].options[$selected_option_index]")"
 
             if [ "$selected_option" = "true" ]; then
                 if wifi-enabled; then
@@ -513,6 +513,27 @@ main() {
                     show_message "Disabling wifi..." forever
                     if ! wifi_off; then
                         show_message "Failed to disable wifi!" 2
+                        continue
+                    fi
+                fi
+            fi
+
+            selected_option_index="$(echo "$output" | jq -r ".settings[1].selected")"
+            selected_option="$(echo "$output" | jq -r ".settings[1].options[$selected_option_index]")"
+
+            if [ "$selected_option" = "true" ]; then
+                if ! will_start_on_boot; then
+                    show_message "Enabling start on boot..." forever
+                    if ! enable_start_on_boot; then
+                        show_message "Failed to enable start on boot!" 2
+                        continue
+                    fi
+                fi
+            else
+                if will_start_on_boot; then
+                    show_message "Disabling start on boot..." forever
+                    if ! disable_start_on_boot; then
+                        show_message "Failed to disable start on boot!" 2
                         continue
                     fi
                 fi
@@ -539,27 +560,6 @@ main() {
             if ! wifi_off; then
                 show_message "Failed to stop wifi!" 2
                 return 1
-            fi
-        elif echo "$selection" | grep -q "^Start on boot$"; then
-            selected_option_index="$(echo "$output" | jq -r ".settings[$selected_index].selected")"
-            selected_option="$(echo "$output" | jq -r ".settings[$selected_index].options[$selected_option_index]")"
-
-            if [ "$selected_option" = "true" ]; then
-                if ! will_start_on_boot; then
-                    show_message "Enabling start on boot..." forever
-                    if ! enable_start_on_boot; then
-                        show_message "Failed to enable start on boot!" 2
-                        continue
-                    fi
-                fi
-            else
-                if will_start_on_boot; then
-                    show_message "Disabling start on boot..." forever
-                    if ! disable_start_on_boot; then
-                        show_message "Failed to disable start on boot!" 2
-                        continue
-                    fi
-                fi
             fi
         fi
     done
