@@ -122,6 +122,22 @@ networks_screen() {
     minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --write-location /tmp/minui-output
 }
 
+saved_networks_screen() {
+    if [ ! -f "$SDCARD_PATH/wifi.txt" ]; then
+        show_message "No wifi.txt file found" 2
+        return 1
+    fi
+
+    minui_list_file="$SDCARD_PATH/wifi.txt"
+    if [ ! -s "$minui_list_file" ]; then
+        show_message "No saved networks found" 2
+        return 1
+    fi
+
+    killall minui-presenter >/dev/null 2>&1 || true
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --write-location /tmp/minui-output
+}
+
 password_screen() {
     SSID="$1"
 
@@ -343,6 +359,40 @@ wifi_on() {
     fi
 }
 
+forget_network_loop() {
+    next_screen="main"
+    while true; do
+        saved_networks_screen
+        exit_code=$?
+        # exit codes: 2 = back button (go back to main screen)
+        if [ "$exit_code" -eq 2 ]; then
+            break
+        fi
+
+        # exit codes: 3 = menu button (exit out of the app)
+        if [ "$exit_code" -eq 3 ]; then
+            next_screen="exit"
+            break
+        fi
+
+        # some sort of error and then go back to main screen
+        if [ "$exit_code" -ne 0 ]; then
+            show_message "Error selecting a network" 2
+            next_screen="main"
+            break
+        fi
+
+        SSID="$(cat /tmp/minui-output)"
+        # remove the SSID from the wifi.txt file
+        sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
+
+        break
+    done
+
+    killall minui-presenter >/dev/null 2>&1 || true
+    echo "$next_screen"
+}
+
 network_loop() {
     if ! wifi-enabled; then
         show_message "Enabling wifi..." forever
@@ -535,6 +585,11 @@ main() {
             fi
         elif echo "$selection" | grep -q "^Connect to network$"; then
             next_screen="$(network_loop)"
+            if [ "$next_screen" = "exit" ]; then
+                break
+            fi
+        elif echo "$selection" | grep -q "^Forget a network$"; then
+            next_screen="$(forget_network_loop)"
             if [ "$next_screen" = "exit" ]; then
                 break
             fi
