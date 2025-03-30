@@ -232,6 +232,8 @@ will_start_on_boot() {
 }
 
 write_config() {
+    ENABLING_WIFI="${1:-true}"
+
     echo "Generating wpa_supplicant.conf"
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
     if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
@@ -256,54 +258,56 @@ write_config() {
         return 1
     fi
 
-    has_passwords=false
-    priority_used=false
-    echo "" >>"$SDCARD_PATH/wifi.txt"
-    while read -r line; do
-        line="$(echo "$line" | xargs)"
-        if [ -z "$line" ]; then
-            continue
-        fi
-
-        # skip if line starts with a comment
-        if echo "$line" | grep -q "^#"; then
-            continue
-        fi
-
-        # skip if line is not in the format "ssid:psk"
-        if ! echo "$line" | grep -q ":"; then
-            continue
-        fi
-
-        ssid="$(echo "$line" | cut -d: -f1 | xargs)"
-        psk="$(echo "$line" | cut -d: -f2- | xargs)"
-        if [ -z "$ssid" ]; then
-            continue
-        fi
-
-        has_passwords=true
-
-        {
-            echo "network={"
-            echo "    ssid=\"$ssid\""
-            if [ "$priority_used" = false ]; then
-                echo "    priority=1"
-                priority_used=true
+    if [ "$ENABLING_WIFI" = "true" ]; then
+        has_passwords=false
+        priority_used=false
+        echo "" >>"$SDCARD_PATH/wifi.txt"
+        while read -r line; do
+            line="$(echo "$line" | xargs)"
+            if [ -z "$line" ]; then
+                continue
             fi
-            if [ -z "$psk" ]; then
-                echo "    key_mgmt=NONE"
-            else
-                echo "    psk=\"$psk\""
+
+            # skip if line starts with a comment
+            if echo "$line" | grep -q "^#"; then
+                continue
             fi
-            echo "}"
-        } >>"$PAK_DIR/res/wpa_supplicant.conf"
-        if [ "$PLATFORM" = "rg35xxplus" ]; then
+
+            # skip if line is not in the format "ssid:psk"
+            if ! echo "$line" | grep -q ":"; then
+                continue
+            fi
+
+            ssid="$(echo "$line" | cut -d: -f1 | xargs)"
+            psk="$(echo "$line" | cut -d: -f2- | xargs)"
+            if [ -z "$ssid" ]; then
+                continue
+            fi
+
+            has_passwords=true
+
             {
-                echo "                \"$ssid\":"
-                echo "                    password: \"$psk\""
-            } >>"$PAK_DIR/res/netplan.yaml"
-        fi
-    done <"$SDCARD_PATH/wifi.txt"
+                echo "network={"
+                echo "    ssid=\"$ssid\""
+                if [ "$priority_used" = false ]; then
+                    echo "    priority=1"
+                    priority_used=true
+                fi
+                if [ -z "$psk" ]; then
+                    echo "    key_mgmt=NONE"
+                else
+                    echo "    psk=\"$psk\""
+                fi
+                echo "}"
+            } >>"$PAK_DIR/res/wpa_supplicant.conf"
+            if [ "$PLATFORM" = "rg35xxplus" ]; then
+                {
+                    echo "                \"$ssid\":"
+                    echo "                    password: \"$psk\""
+                } >>"$PAK_DIR/res/netplan.yaml"
+            fi
+        done <"$SDCARD_PATH/wifi.txt"
+    fi
 
     if [ "$PLATFORM" = "miyoomini" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
@@ -328,7 +332,7 @@ write_config() {
 wifi_off() {
     echo "Preparing to toggle wifi off"
 
-    if ! write_config; then
+    if ! write_config "false"; then
         return 1
     fi
 
@@ -341,7 +345,7 @@ wifi_off() {
 wifi_on() {
     echo "Preparing to toggle wifi on"
 
-    if ! write_config; then
+    if ! write_config "true"; then
         return 1
     fi
 
@@ -389,7 +393,7 @@ forget_network_loop() {
         SSID="$(cat /tmp/minui-output)"
         # remove the SSID from the wifi.txt file
         sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
-        if ! write_config; then
+        if ! write_config "true"; then
             return 1
         fi
 
@@ -619,7 +623,7 @@ main() {
             fi
 
             show_message "Updating wifi config" forever
-            if ! write_config; then
+            if ! write_config "true"; then
                 show_message "Failed to write config" 2
             fi
 
