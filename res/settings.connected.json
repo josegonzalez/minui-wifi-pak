@@ -23,12 +23,6 @@
             }
         },
         {
-            "name": "Connect to network",
-            "features": {
-                "confirm_text": "CONNECT"
-            }
-        },
-        {
             "name": "SSID: NETWORK_SSID",
             "features": {
                 "unselectable": true
