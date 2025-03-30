@@ -491,12 +491,7 @@ main() {
         selection="$(echo "$output" | jq -r ".settings[$selected_index].name")"
         echo "selection: $selection"
 
-        if echo "$selection" | grep -q "^Connect to network$"; then
-            next_screen="$(network_loop)"
-            if [ "$next_screen" = "exit" ]; then
-                break
-            fi
-        elif [ "$selection" = "Enable" ] || [ "$selection" = "Start on boot" ]; then
+        if [ "$selection" = "Enable" ] || [ "$selection" = "Start on boot" ]; then
             selected_option_index="$(echo "$output" | jq -r ".settings[0].selected")"
             selected_option="$(echo "$output" | jq -r ".settings[0].options[$selected_option_index]")"
 
@@ -538,6 +533,11 @@ main() {
                     fi
                 fi
             fi
+        elif echo "$selection" | grep -q "^Connect to network$"; then
+            next_screen="$(network_loop)"
+            if [ "$next_screen" = "exit" ]; then
+                break
+            fi
         elif echo "$selection" | grep -q "^Refresh connection$"; then
             show_message "Disconnecting from wifi..." forever
             if ! wifi_off; then
@@ -554,12 +554,6 @@ main() {
             if ! service-on; then
                 show_message "Failed to enable wifi!" 2
                 continue
-            fi
-        elif echo "$selection" | grep -q "^Disable$"; then
-            show_message "Disconnecting from wifi..." forever
-            if ! wifi_off; then
-                show_message "Failed to stop wifi!" 2
-                return 1
             fi
         fi
     done
