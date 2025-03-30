@@ -5,6 +5,7 @@
             "options": ["false", "true"],
             "selected": IS_ENABLED,
             "features": {
+                "confirm_text": "SAVE",
                 "unconfirmable": true
             }
         },
@@ -13,6 +14,7 @@
             "options": ["false", "true"],
             "selected": IS_START_ON_BOOT,
             "features": {
+                "confirm_text": "SAVE",
                 "unconfirmable": true
             }
         },
