@@ -39,12 +39,6 @@
             "features": {
                 "unselectable": true
             }
-        },
-        {
-            "name": "IP Address: NETWORK_IP_ADDRESS",
-            "features": {
-                "unselectable": true
-            }
         }
     ]
 }
