@@ -389,7 +389,21 @@ forget_network_loop() {
         SSID="$(cat /tmp/minui-output)"
         # remove the SSID from the wifi.txt file
         sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
+        if ! write_config; then
+            return 1
+        fi
 
+        show_message "Refreshing connection" forever
+
+        if ! wifi_off; then
+            show_message "Failed to disable wifi" 2
+            return 1
+        fi
+
+        if ! wifi_on; then
+            show_message "Failed to enable wifi" 2
+            return 1
+        fi
         break
     done
 
