@@ -107,7 +107,7 @@ networks_screen() {
     rm -f "$minui_list_file" "/tmp/minui-output"
     touch "$minui_list_file"
 
-    show_message "Scanning for networks..." forever
+    show_message "Scanning for networks" forever
     DELAY=30
 
     for i in $(seq 1 "$DELAY"); do
@@ -232,7 +232,7 @@ will_start_on_boot() {
 }
 
 write_config() {
-    echo "Generating wpa_supplicant.conf..."
+    echo "Generating wpa_supplicant.conf"
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
     if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
         template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
@@ -240,7 +240,7 @@ write_config() {
 
     cp "$template_file" "$PAK_DIR/res/wpa_supplicant.conf"
     if [ "$PLATFORM" = "rg35xxplus" ]; then
-        echo "Generating netplan.yaml..."
+        echo "Generating netplan.yaml"
         cp "$PAK_DIR/res/netplan.yaml.tmpl" "$PAK_DIR/res/netplan.yaml"
     fi
 
@@ -326,7 +326,7 @@ write_config() {
 }
 
 wifi_off() {
-    echo "Preparing to toggle wifi off..."
+    echo "Preparing to toggle wifi off"
 
     if ! write_config; then
         return 1
@@ -339,7 +339,7 @@ wifi_off() {
 }
 
 wifi_on() {
-    echo "Preparing to toggle wifi on..."
+    echo "Preparing to toggle wifi on"
 
     if ! write_config; then
         return 1
@@ -399,7 +399,7 @@ forget_network_loop() {
 
 network_loop() {
     if ! wifi-enabled; then
-        show_message "Enabling wifi..." forever
+        show_message "Enabling wifi" forever
         if ! service-on; then
             show_message "Failed to enable wifi!" 2
             return 1
@@ -446,7 +446,7 @@ network_loop() {
             continue
         fi
 
-        show_message "Connecting to $SSID..." forever
+        show_message "Connecting to $SSID" forever
         if ! wifi_on; then
             show_message "Failed to start wifi!" 2
             return 1
@@ -551,7 +551,7 @@ main() {
 
             if [ "$selected_option" = "true" ]; then
                 if ! wifi-enabled; then
-                    show_message "Enabling wifi..." forever
+                    show_message "Enabling wifi" forever
                     if ! wifi_on; then
                         show_message "Failed to enable wifi!" 2
                         continue
@@ -559,7 +559,7 @@ main() {
                 fi
             else
                 if wifi-enabled; then
-                    show_message "Disabling wifi..." forever
+                    show_message "Disabling wifi" forever
                     if ! wifi_off; then
                         show_message "Failed to disable wifi!" 2
                         continue
@@ -572,7 +572,7 @@ main() {
 
             if [ "$selected_option" = "true" ]; then
                 if ! will_start_on_boot; then
-                    show_message "Enabling start on boot..." forever
+                    show_message "Enabling start on boot" forever
                     if ! enable_start_on_boot; then
                         show_message "Failed to enable start on boot!" 2
                         continue
@@ -580,7 +580,7 @@ main() {
                 fi
             else
                 if will_start_on_boot; then
-                    show_message "Disabling start on boot..." forever
+                    show_message "Disabling start on boot" forever
                     if ! disable_start_on_boot; then
                         show_message "Failed to disable start on boot!" 2
                         continue
@@ -598,18 +598,18 @@ main() {
                 break
             fi
         elif echo "$selection" | grep -q "^Refresh connection$"; then
-            show_message "Disconnecting from wifi..." forever
+            show_message "Disconnecting from wifi" forever
             if ! wifi_off; then
                 show_message "Failed to stop wifi!" 2
                 return 1
             fi
 
-            show_message "Updating wifi config..." forever
+            show_message "Updating wifi config" forever
             if ! write_config; then
                 show_message "Failed to write config!" 2
             fi
 
-            show_message "Refreshing connection..." forever
+            show_message "Refreshing connection" forever
             if ! service-on; then
                 show_message "Failed to enable wifi!" 2
                 continue
