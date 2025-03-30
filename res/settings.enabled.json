@@ -1,0 +1,26 @@
+{
+    "settings": [
+        {
+            "name": "Enable",
+            "options": ["false", "true"],
+            "selected": IS_ENABLED,
+            "features": {
+                "unconfirmable": true
+            }
+        },
+        {
+            "name": "Start on boot",
+            "options": ["false", "true"],
+            "selected": IS_START_ON_BOOT,
+            "features": {
+                "unconfirmable": true
+            }
+        },
+        {
+            "name": "Forget a network"
+        },
+        {
+            "name": "Connect to network"
+        }
+    ]
+}
