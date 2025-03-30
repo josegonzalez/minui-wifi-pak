@@ -123,12 +123,17 @@ networks_screen() {
 }
 
 saved_networks_screen() {
+    minui_list_file="/tmp/minui-list"
+    rm -f "$minui_list_file" "/tmp/minui-output"
+    touch "$minui_list_file"
+
     if [ ! -f "$SDCARD_PATH/wifi.txt" ]; then
         show_message "No wifi.txt file found" 2
         return 1
     fi
 
-    minui_list_file="$SDCARD_PATH/wifi.txt"
+    sed '/^#/d; /^$/d; s/:.*//' "$SDCARD_PATH/wifi.txt" >"$minui_list_file"
+
     if [ ! -s "$minui_list_file" ]; then
         show_message "No saved networks found" 2
         return 1
