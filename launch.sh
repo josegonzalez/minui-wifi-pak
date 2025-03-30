@@ -21,86 +21,88 @@ export HOME="$USERDATA_PATH/$PAK_NAME"
 export LD_LIBRARY_PATH="$PAK_DIR/lib/$PLATFORM:$PAK_DIR/lib:$LD_LIBRARY_PATH"
 export PATH="$PAK_DIR/bin/$architecture:$PAK_DIR/bin/$PLATFORM:$PAK_DIR/bin:$PATH"
 
+get_ssid_and_ip() {
+    enabled="$(cat /sys/class/net/wlan0/operstate)"
+    if [ "$enabled" != "up" ]; then
+        return
+    fi
+
+    ssid=""
+    ip_address=""
+
+    count=0
+    while true; do
+        count=$((count + 1))
+        if [ "$count" -gt 5 ]; then
+            break
+        fi
+
+        ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
+        ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
+        if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
+            break
+        fi
+        sleep 1
+    done
+
+    if [ -z "$ssid" ]; then
+        ssid="N/A"
+    fi
+    if [ -z "$ip_address" ]; then
+        ip_address="N/A"
+    fi
+
+    printf "%s\t%s" "$ssid" "$ip_address"
+}
+
 main_screen() {
     minui_list_file="/tmp/minui-list"
-    rm -f "$minui_list_file"
+    rm -f "$minui_list_file" "/tmp/minui-output"
     touch "$minui_list_file"
+
+    template_file="$PAK_DIR/res/settings.json"
 
     start_on_boot=false
     if will_start_on_boot; then
         start_on_boot=true
     fi
 
-    echo "Enabled: false" >>"$minui_list_file"
-    echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-    echo "Enable" >>"$minui_list_file"
-    echo "Toggle start on boot" >>"$minui_list_file"
-
-    ip_address="N/A"
+    enabled=false
+    ssid_and_ip=""
     if wifi-enabled; then
-        echo "Enabled: true" >"$minui_list_file"
-        echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-        echo "Disable" >>"$minui_list_file"
-        echo "Connect to network" >>"$minui_list_file"
-        echo "Toggle start on boot" >>"$minui_list_file"
+        enabled=true
+        template_file="$PAK_DIR/res/settings.enabled.json"
+
     fi
 
-    ssid="N/A"
-    ip_address="N/A"
-    enabled="$(cat /sys/class/net/wlan0/operstate)"
-    if [ "$enabled" = "up" ]; then
-        ssid=""
-        ip_address=""
-
-        count=0
-        while true; do
-            count=$((count + 1))
-            if [ "$count" -gt 5 ]; then
-                break
-            fi
-
-            ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
-            ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
-            if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
-                break
-            fi
-            sleep 1
-        done
-
-        if [ -z "$ssid" ]; then
-            ssid="N/A"
-        fi
-        if [ -z "$ip_address" ]; then
-            ip_address="N/A"
-        fi
-
-        if [ "$ssid" != "N/A" ] && [ "$ip_address" != "N/A" ]; then
-            echo "Enabled: true" >"$minui_list_file"
-            echo "Start on boot: $start_on_boot" >>"$minui_list_file"
-            echo "SSID: $ssid" >>"$minui_list_file"
-            if [ "$ip_address" = "N/A" ]; then
-                echo "IP: N/A" >>"$minui_list_file"
-                echo "Refresh connection" >>"$minui_list_file"
-            else
-                echo "IP: $ip_address" >>"$minui_list_file"
-            fi
-            echo "Disable" >>"$minui_list_file"
-            echo "Connect to network" >>"$minui_list_file"
-            echo "Toggle start on boot" >>"$minui_list_file"
+    ssid_and_ip="$(get_ssid_and_ip)"
+    if [ -n "$ssid_and_ip" ]; then
+        ssid="$(echo "$ssid_and_ip" | awk 'BEGIN { OFS="\t" } {print $1}')"
+        ip_address="$(echo "$ssid_and_ip" | awk 'BEGIN { OFS="\t" } {print $2}')"
+        template_file="$PAK_DIR/res/settings.connected.json"
+        if [ "$ip_address" = "N/A" ]; then
+            template_file="$PAK_DIR/res/settings.no-ip.json"
         fi
     fi
+
+    cp "$template_file" "$minui_list_file"
+    sed -i "s/IS_ENABLED/$enabled/" "$minui_list_file"
+    sed -i "s/IS_START_ON_BOOT/$start_on_boot/" "$minui_list_file"
+    sed -i "s/NETWORK_SSID/$ssid/" "$minui_list_file"
+    sed -i "s/NETWORK_IP_ADDRESS/$ip_address/" "$minui_list_file"
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Configuration"
+    minui-list --file "$minui_list_file" --format json --title "Wifi Configuration" --output /tmp/minui-output
 }
 
 networks_screen() {
-    show_message "Scanning for networks..." 2
+    minui_list_file="/tmp/minui-list"
+    rm -f "$minui_list_file" "/tmp/minui-output"
+    touch "$minui_list_file"
+
+    show_message "Scanning for networks..." forever
     DELAY=30
 
-    minui_list_file="/tmp/minui-list"
-    rm -f "$minui_list_file"
-    touch "$minui_list_file"
     for i in $(seq 1 "$DELAY"); do
         iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
         if [ -s "$minui_list_file" ]; then
@@ -110,12 +112,13 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Networks"
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --output /tmp/minui-output
 }
 
 password_screen() {
     SSID="$1"
 
+    rm -f "/tmp/minui-output"
     touch "$SDCARD_PATH/wifi.txt"
 
     initial_password=""
@@ -124,7 +127,7 @@ password_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    password="$(minui-keyboard --header "Enter Password" --initial-value "$initial_password")"
+    minui-keyboard --header "Enter Password" --initial-value "$initial_password" --output /tmp/minui-output
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
@@ -134,6 +137,12 @@ password_screen() {
     fi
     if [ "$exit_code" -ne 0 ]; then
         show_message "Error entering password" 2
+        return 1
+    fi
+
+    password="$(cat /tmp/minui-output)"
+    if [ -z "$password" ]; then
+        show_message "Password cannot be empty" 2
         return 1
     fi
 
@@ -338,7 +347,7 @@ network_loop() {
 
     next_screen="main"
     while true; do
-        SSID="$(networks_screen)"
+        networks_screen
         exit_code=$?
         # exit codes: 2 = back button (go back to main screen)
         if [ "$exit_code" -eq 2 ]; then
@@ -358,6 +367,7 @@ network_loop() {
             break
         fi
 
+        SSID="$(cat /tmp/minui-output)"
         password_screen "$SSID"
         exit_code=$?
         # exit codes: 2 = back button (go back to networks screen)
@@ -381,10 +391,10 @@ network_loop() {
             return 1
         fi
 
-        killall minui-presenter >/dev/null 2>&1 || true
         break
     done
 
+    killall minui-presenter >/dev/null 2>&1 || true
     echo "$next_screen"
 }
 
@@ -455,12 +465,18 @@ main() {
     chmod +x "$PAK_DIR/bin/$PLATFORM/minui-presenter"
 
     while true; do
-        selection="$(main_screen)"
+        main_screen
         exit_code=$?
         # exit codes: 2 = back button, 3 = menu button
         if [ "$exit_code" -ne 0 ]; then
             break
         fi
+
+        output="$(cat /tmp/minui-output)"
+        # todo: get new vs old state of `Enable` and `Start on boot` and write them out
+        # todo: get selection from output and handle the different cases
+        selection="$(echo "$output" | jq -r '.selected')"
+        echo "selection: $selection"
 
         if echo "$selection" | grep -q "^Connect to network$"; then
             next_screen="$(network_loop)"
