@@ -72,7 +72,6 @@ main_screen() {
     if wifi-enabled; then
         enabled=true
         template_file="$PAK_DIR/res/settings.enabled.json"
-
     fi
 
     ssid_and_ip="$(get_ssid_and_ip)"
@@ -92,7 +91,7 @@ main_screen() {
     sed -i "s/NETWORK_IP_ADDRESS/$ip_address/" "$minui_list_file"
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format json --title "Wifi Configuration" --output /tmp/minui-output
+    minui-list --item-key settings --file "$minui_list_file" --format json --title "Wifi Configuration" --write-location /tmp/minui-output --write-value state
 }
 
 networks_screen() {
@@ -112,7 +111,7 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --output /tmp/minui-output
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --write-location /tmp/minui-output
 }
 
 password_screen() {
@@ -127,7 +126,7 @@ password_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-keyboard --header "Enter Password" --initial-value "$initial_password" --output /tmp/minui-output
+    minui-keyboard --header "Enter Password" --initial-value "$initial_password" --write-location /tmp/minui-output
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
