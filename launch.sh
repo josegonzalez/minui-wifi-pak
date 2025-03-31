@@ -155,7 +155,7 @@ password_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-keyboard --header "Enter Password" --initial-value "$initial_password" --write-location /tmp/minui-output
+    minui-keyboard --title "Enter Password" --initial-value "$initial_password" --write-location /tmp/minui-output
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
@@ -254,8 +254,7 @@ write_config() {
     sed -i '/^$/d' "$SDCARD_PATH/wifi.txt"
     # exit non-zero if no wifi.txt file or empty
     if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
-        show_message "No credentials found in wifi.txt" 2
-        return 1
+        echo "No credentials found in wifi.txt"
     fi
 
     if [ "$ENABLING_WIFI" = "true" ]; then
@@ -351,6 +350,11 @@ wifi_on() {
 
     if ! service-on; then
         return 1
+    fi
+
+    if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
+        show_message "No credentials found in wifi.txt" 2
+        return 0
     fi
 
     DELAY=30
