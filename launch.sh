@@ -352,6 +352,11 @@ wifi_on() {
         return 1
     fi
 
+    if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
+        show_message "No credentials found in wifi.txt" 2
+        return 0
+    fi
+
     DELAY=30
     for i in $(seq 1 "$DELAY"); do
         STATUS=$(cat "/sys/class/net/wlan0/operstate")
