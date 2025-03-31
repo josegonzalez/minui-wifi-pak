@@ -155,7 +155,7 @@ password_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-keyboard --header "Enter Password" --initial-value "$initial_password" --write-location /tmp/minui-output
+    minui-keyboard --title "Enter Password" --initial-value "$initial_password" --write-location /tmp/minui-output
     exit_code=$?
     if [ "$exit_code" -eq 2 ]; then
         return 2
