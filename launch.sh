@@ -76,8 +76,8 @@ main_screen() {
 
     ssid_and_ip="$(get_ssid_and_ip)"
     if [ -n "$ssid_and_ip" ]; then
-        ssid="$(echo "$ssid_and_ip" | awk 'BEGIN { OFS="\t" } {print $1}')"
-        ip_address="$(echo "$ssid_and_ip" | awk 'BEGIN { OFS="\t" } {print $2}')"
+        ssid="$(echo "$ssid_and_ip" | cut -f1)"
+        ip_address="$(echo "$ssid_and_ip" | cut -f2)"
         template_file="$PAK_DIR/res/settings.connected.json"
         if [ "$ip_address" = "N/A" ]; then
             template_file="$PAK_DIR/res/settings.no-ip.json"
