@@ -46,7 +46,7 @@ main() {
 
     echo "Starting wpa_supplicant..."
     if [ "$PLATFORM" = "miyoomini" ]; then
-        killall wpa_supplicant >/dev/null 2>&1 &
+        killall wpa_supplicant &
         if ! grep -c 8188fu /proc/modules; then
             insmod "$PAK_DIR/res/miyoomini/8188fu.ko"
         fi
@@ -65,12 +65,29 @@ main() {
 
         /customer/app/wpa_cli -i wlan0 reconnect
         iw dev wlan0 set power_save off
-    elif [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
-        if [ "$PLATFORM" = "my282" ]; then
-            killall -9 wpa_supplicant 2>/dev/null || true
+    elif [ "$PLATFORM" = "tg5040" ]; then
+        if pgrep wpa_supplicant; then
+            wpa_cli -p /etc/wifi/sockets -i wlan0 reconfigure
         else
-            /etc/init.d/wpa_supplicant stop || true
+            ifconfig wlan0 up || true
+            wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf -O /etc/wifi/sockets >/tmp/wpa_supplicant.log
+            cat /tmp/wpa_supplicant.log
+            if grep -q "Delete '/etc/wifi/sockets/wlan0' manually if it is not used anymore" /tmp/wpa_supplicant.log; then
+                killall -15 wpa_supplicant
+                rm -f /etc/wifi/sockets/wlan0
+                wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf -O /etc/wifi/sockets
+            fi
+            rm -f /tmp/wpa_supplicant.log
         fi
+
+        if ! pgrep wpa_supplicant; then
+            echo "Failed to start wpa_supplicant"
+            return 1
+        fi
+        udhcpc -i wlan0 -n &
+    elif [ "$PLATFORM" = "my282" ]; then
+        killall -9 wpa_supplicant || true
+        ifconfig wlan0 up || true
         if ! /etc/init.d/wpa_supplicant start; then
             echo "Failed to start wpa_supplicant via init.d"
         fi
@@ -91,8 +108,6 @@ main() {
         echo "$PLATFORM is not a supported platform for Wifi.pak"
         return 1
     fi
-
-    ifconfig wlan0 up || true
 }
 
 main "$@"
