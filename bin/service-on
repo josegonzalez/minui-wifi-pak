@@ -46,7 +46,8 @@ main() {
 
     echo "Starting wpa_supplicant..."
     if [ "$PLATFORM" = "miyoomini" ]; then
-        killall wpa_supplicant &
+        killall wpa_supplicant || true
+        killall udhcpc || true
         if ! grep -c 8188fu /proc/modules; then
             insmod "$PAK_DIR/res/miyoomini/8188fu.ko"
         fi
@@ -66,6 +67,8 @@ main() {
         /customer/app/wpa_cli -i wlan0 reconnect
         iw dev wlan0 set power_save off
     elif [ "$PLATFORM" = "tg5040" ]; then
+        killall -15 wpa_supplicant || true
+        killall -15 udhcpc || true
         ifconfig wlan0 up || true
         wpa_supplicant -B -D nl80211 -iwlan0 -c /etc/wifi/wpa_supplicant.conf -O /etc/wifi/sockets >/tmp/wpa_supplicant.log
         cat /tmp/wpa_supplicant.log
@@ -83,6 +86,7 @@ main() {
         udhcpc -i wlan0 -n &
     elif [ "$PLATFORM" = "my282" ]; then
         killall -9 wpa_supplicant || true
+        killall -9 udhcpc || true
         ifconfig wlan0 up || true
         if ! /etc/init.d/wpa_supplicant start; then
             echo "Failed to start wpa_supplicant via init.d"
