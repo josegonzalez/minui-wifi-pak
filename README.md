@@ -31,7 +31,7 @@ Browse to `Tools > Wifi` and press `A` to enter the wifi management screen. It w
 
 ### Debug Logging
 
-To enable debug logging, create a file named `debug` in the `$SDCARD_PATH/.userdata/$PLATFORM/Wifi` folder. Logs will be written to the `$SDCARD_PATH/.userdata/$PLATFORM/logs/` folder.
+Debug logs are written to the`$SDCARD_PATH/.userdata/$PLATFORM/logs/` folder.
 
 ### Customizing Wifi Credentials
 
