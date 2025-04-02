@@ -416,7 +416,7 @@ forget_network_loop() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    echo "$next_screen"
+    echo "$next_screen" >/tmp/wifi-next-screen
 }
 
 network_loop() {
@@ -478,11 +478,11 @@ network_loop() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    echo "$next_screen"
+    echo "$next_screen" >/tmp/wifi-next-screen
 }
 
 cleanup() {
-    rm -f /tmp/stay_awake
+    rm -f /tmp/stay_awake /tmp/wifi-next-screen
     killall minui-presenter >/dev/null 2>&1 || true
 }
 
@@ -602,12 +602,14 @@ main() {
                 fi
             fi
         elif echo "$selection" | grep -q "^Connect to network$"; then
-            next_screen="$(network_loop)"
+            network_loop
+            next_screen="$(cat /tmp/wifi-next-screen)"
             if [ "$next_screen" = "exit" ]; then
                 break
             fi
         elif echo "$selection" | grep -q "^Forget a network$"; then
-            next_screen="$(forget_network_loop)"
+            forget_network_loop
+            next_screen="$(cat /tmp/wifi-next-screen)"
             if [ "$next_screen" = "exit" ]; then
                 break
             fi
