@@ -367,7 +367,6 @@ wifi_on() {
     done
 
     if [ "$STATUS" != "up" ]; then
-        show_message "Failed to start wifi" 2
         return 1
     fi
 }
