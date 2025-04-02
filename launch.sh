@@ -119,7 +119,7 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --confirm-text "FORGET" --title "Wifi Networks" --write-location /tmp/minui-output
+    minui-list --file "$minui_list_file" --format text --confirm-text "CONNECT" --title "Wifi Networks" --write-location /tmp/minui-output
 }
 
 saved_networks_screen() {
@@ -140,7 +140,7 @@ saved_networks_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --write-location /tmp/minui-output
+    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --confirm-text "FORGET" --write-location /tmp/minui-output
 }
 
 password_screen() {
