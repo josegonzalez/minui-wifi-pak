@@ -397,19 +397,20 @@ forget_network_loop() {
         # remove the SSID from the wifi.txt file
         sed -i "/^$SSID:/d" "$SDCARD_PATH/wifi.txt"
         if ! write_config "true"; then
-            return 1
+            show_message "Failed to write wireless config" 2
+            break
         fi
 
         show_message "Refreshing connection" forever
 
         if ! wifi_off; then
             show_message "Failed to disable wifi" 2
-            return 1
+            break
         fi
 
         if ! wifi_on; then
             show_message "Failed to enable wifi" 2
-            return 1
+            break
         fi
         break
     done
@@ -470,7 +471,7 @@ network_loop() {
         show_message "Connecting to $SSID" forever
         if ! wifi_on; then
             show_message "Failed to start wifi" 2
-            return 1
+            break
         fi
 
         break
