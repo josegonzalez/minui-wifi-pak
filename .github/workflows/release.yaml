@@ -106,7 +106,7 @@ jobs:
           GIT_NEXT_TAG: ${{ steps.next-tag.outputs.version }}
 
       - name: Release
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: dist/*
           generate_release_notes: true
