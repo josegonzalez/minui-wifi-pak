@@ -99,7 +99,7 @@ main_screen() {
     sed -i "s/NETWORK_IP_ADDRESS/$ip_address/" "$minui_list_file"
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --item-key settings --file "$minui_list_file" --format json --cancel-text "EXIT" --title "Wifi Configuration" --write-location /tmp/minui-output --write-value state
+    minui-list --disable-auto-sleep --item-key settings --file "$minui_list_file" --format json --cancel-text "EXIT" --title "Wifi Configuration" --write-location /tmp/minui-output --write-value state
 }
 
 networks_screen() {
@@ -119,7 +119,7 @@ networks_screen() {
     done
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --confirm-text "CONNECT" --title "Wifi Networks" --write-location /tmp/minui-output
+    minui-list --disable-auto-sleep --file "$minui_list_file" --format text --confirm-text "CONNECT" --title "Wifi Networks" --write-location /tmp/minui-output
 }
 
 saved_networks_screen() {
@@ -140,7 +140,7 @@ saved_networks_screen() {
     fi
 
     killall minui-presenter >/dev/null 2>&1 || true
-    minui-list --file "$minui_list_file" --format text --title "Wifi Networks" --confirm-text "FORGET" --write-location /tmp/minui-output
+    minui-list --disable-auto-sleep --file "$minui_list_file" --format text --title "Wifi Networks" --confirm-text "FORGET" --write-location /tmp/minui-output
 }
 
 password_screen() {
