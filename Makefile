@@ -1,6 +1,6 @@
-PAK_NAME := $(shell jq -r .label config.json)
-PAK_TYPE := $(shell jq -r .pak_type config.json)
-PAK_FOLDER := $(shell echo $(PAK_TYPE) | tr '[:lower:]' '[:upper:]' | cut -c1)$(shell echo $(PAK_TYPE) | cut -c2-)s
+PAK_NAME := $(shell jq -r .name pak.json)
+PAK_TYPE := $(shell jq -r .type pak.json)
+PAK_FOLDER := $(shell echo $(PAK_TYPE) | cut -c1)$(shell echo $(PAK_TYPE) | tr '[:upper:]' '[:lower:]' | cut -c2-)s
 
 PUSH_SDCARD_PATH ?= /mnt/SDCARD
 PUSH_PLATFORM ?= tg5040
@@ -50,6 +50,9 @@ release: build
 	mkdir -p dist
 	git archive --format=zip --output "dist/$(PAK_NAME).pak.zip" HEAD
 	while IFS= read -r file; do zip -r "dist/$(PAK_NAME).pak.zip" "$$file"; done < .gitarchiveinclude
+	jq '.version = "$(RELEASE_VERSION)"' pak.json > pak.json.tmp
+	mv pak.json.tmp pak.json
+	zip -r "dist/$(PAK_NAME).pak.zip" pak.json
 	ls -lah dist
 
 push: release
