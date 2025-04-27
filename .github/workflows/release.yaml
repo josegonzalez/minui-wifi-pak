@@ -119,7 +119,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add pak.json
-          git commit -m "Release $(RELEASE_VERSION)"
+          git commit -m "Release $RELEASE_VERSION"
           git tag "$RELEASE_VERSION"
           git push origin "$RELEASE_VERSION"
           git push origin main
