@@ -50,10 +50,13 @@ release: build
 	mkdir -p dist
 	git archive --format=zip --output "dist/$(PAK_NAME).pak.zip" HEAD
 	while IFS= read -r file; do zip -r "dist/$(PAK_NAME).pak.zip" "$$file"; done < .gitarchiveinclude
-	jq '.version = "$(RELEASE_VERSION)"' pak.json > pak.json.tmp
-	mv pak.json.tmp pak.json
+	$(MAKE) bump-version
 	zip -r "dist/$(PAK_NAME).pak.zip" pak.json
 	ls -lah dist
+
+bump-version:
+	jq '.version = "$(RELEASE_VERSION)"' pak.json > pak.json.tmp
+	mv pak.json.tmp pak.json
 
 push: release
 	rm -rf "dist/$(PAK_NAME).pak"

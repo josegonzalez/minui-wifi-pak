@@ -102,12 +102,16 @@ jobs:
 
       - name: Create and Push Tag
         run: |
+          make bump-version
+          git add pak.json
+          git commit -m "Release $(RELEASE_VERSION)"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git tag "$GIT_NEXT_TAG"
-          git push origin "$GIT_NEXT_TAG"
+          git tag "$RELEASE_VERSION"
+          git push origin "$RELEASE_VERSION"
+          git push origin main
         env:
-          GIT_NEXT_TAG: ${{ needs.build.outputs.next-tag }}
+          RELEASE_VERSION: ${{ needs.build.outputs.next-tag }}
 
       - name: Release
         uses: softprops/action-gh-release@v2.2.2
