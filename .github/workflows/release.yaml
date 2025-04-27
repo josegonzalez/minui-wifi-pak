@@ -21,22 +21,15 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: build
-    runs-on: ubuntu-24.04-arm
+  version:
+    name: version
+    runs-on: ubuntu-24.04
     outputs:
-      next-tag: ${{ steps.next-tag.outputs.version }}
+      version: ${{ steps.next-tag.outputs.version }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3.6.0
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3.10.0
 
       - name: Get Latest Tag
         id: latest-tag
@@ -50,10 +43,26 @@ jobs:
           bump: ${{ github.event.inputs.bump_type }}
           input: ${{ steps.latest-tag.outputs.GIT_LATEST_TAG }}
 
+  build:
+    name: build
+    runs-on: ubuntu-24.04-arm
+    needs: version
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3.6.0
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
       - name: Create release
         run: make clean build release
         env:
-          RELEASE_VERSION: ${{ steps.next-tag.outputs.version }}
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
 
       - name: Get Pak Name
         id: pak-name
@@ -74,7 +83,9 @@ jobs:
   release:
     name: release
     runs-on: ubuntu-24.04
-    needs: build
+    needs:
+      - version
+      - build
 
     steps:
       - name: Checkout
@@ -104,14 +115,14 @@ jobs:
         run: |
           make bump-version
           git add pak.json
-          git commit -m "Release $(RELEASE_VERSION)"
+          git commit -m "Release $(GIT_NEXT_TAG)"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git tag "$RELEASE_VERSION"
-          git push origin "$RELEASE_VERSION"
+          git tag "$GIT_NEXT_TAG"
+          git push origin "$GIT_NEXT_TAG"
           git push origin main
         env:
-          RELEASE_VERSION: ${{ needs.build.outputs.next-tag }}
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
 
       - name: Release
         uses: softprops/action-gh-release@v2.2.2
@@ -119,4 +130,4 @@ jobs:
           files: dist/*
           generate_release_notes: true
           make_latest: "true"
-          tag_name: ${{ needs.build.outputs.next-tag }}
+          tag_name: ${{ needs.version.outputs.version }}
