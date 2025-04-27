@@ -1,0 +1,16 @@
+{
+    "name": "Wifi",
+    "type": "TOOL",
+    "description": "Manage Wifi settings",
+    "author": "josegonzalez",
+    "repo_url": "https://github.com/josegonzalez/minui-wifi-pak",
+    "release_filename": "Wifi.pak.zip",
+    "platforms": [
+        "miyoomini",
+        "my282",
+        "rg35xxplus",
+        "tg5040"
+    ],
+    "launch": "launch.sh",
+    "version": "latest"
+}
