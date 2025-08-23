@@ -26,6 +26,8 @@ main() {
             SYSTEM_JSON_PATH="/appconfigs/system.json"
         elif [ "$PLATFORM" = "my282" ]; then
             SYSTEM_JSON_PATH="/config/system.json"
+        elif [ "$PLATFORM" = "my355" ]; then
+            SYSTEM_JSON_PATH="/userdata/system.json"
         fi
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
         [ ! -s "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"
@@ -91,6 +93,17 @@ main() {
         if ! /etc/init.d/wpa_supplicant start; then
             echo "Failed to start wpa_supplicant via init.d"
         fi
+
+        if ! pgrep wpa_supplicant; then
+            echo "Failed to start wpa_supplicant"
+            return 1
+        fi
+        ( (udhcpc -i wlan0 -q &) &)
+    elif [ "$PLATFORM" = "my355" ]; then
+        killall -9 wpa_supplicant || true
+        killall -9 udhcpc || true
+        ifconfig wlan0 up || true
+        wpa_supplicant -B -D nl80211 -iwlan0 -c /userdata/cfg/wpa_supplicant.conf
 
         if ! pgrep wpa_supplicant; then
             echo "Failed to start wpa_supplicant"
