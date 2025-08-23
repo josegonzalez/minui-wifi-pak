@@ -30,16 +30,15 @@ get_ssid_and_ip() {
     ssid=""
     ip_address=""
 
-    wpa_cli -i wlan0 status
-
     for i in $(seq 1 5); do
         if [ "$PLATFORM" = "my355" ]; then
-            ssid="$(wpa_cli -i wlan0 status | grep ssid= | cut -d'=' -f2)"
+            ssid="$(wpa_cli -i wlan0 status | grep ssid= | grep -v bssid= | cut -d'=' -f2)"
+            ip_address="$(wpa_cli -i wlan0 status | grep ip_address= | cut -d'=' -f2)"
         else
             ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
+            ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
         fi
 
-        ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
         if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
             break
         fi
