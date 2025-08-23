@@ -20,7 +20,7 @@ main() {
     fi
 
     echo "Preparing to enable wifi..."
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "tg5040" ]; then
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "my355" ] || [ "$PLATFORM" = "tg5040" ]; then
         SYSTEM_JSON_PATH="/mnt/UDISK/system.json"
         if [ "$PLATFORM" = "miyoomini" ]; then
             SYSTEM_JSON_PATH="/appconfigs/system.json"
