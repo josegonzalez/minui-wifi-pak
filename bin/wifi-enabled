@@ -18,6 +18,9 @@ main() {
     if [ "$PLATFORM" = "my282" ]; then
         SYSTEM_JSON_PATH="/config/system.json"
     fi
+    if [ "$PLATFORM" = "my355" ]; then
+        SYSTEM_JSON_PATH="/userdata/system.json"
+    fi
 
     if [ -f "$SYSTEM_JSON_PATH" ]; then
         [ ! -f "$SYSTEM_JSON_PATH" ] && echo '{"wifi": 0}' >"$SYSTEM_JSON_PATH"

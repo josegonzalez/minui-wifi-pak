@@ -30,15 +30,15 @@ get_ssid_and_ip() {
     ssid=""
     ip_address=""
 
-    count=0
-    while true; do
-        count=$((count + 1))
-        if [ "$count" -gt 5 ]; then
-            break
+    for i in $(seq 1 5); do
+        if [ "$PLATFORM" = "my355" ]; then
+            ssid="$(wpa_cli -i wlan0 status | grep ssid= | grep -v bssid= | cut -d'=' -f2)"
+            ip_address="$(wpa_cli -i wlan0 status | grep ip_address= | cut -d'=' -f2)"
+        else
+            ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
+            ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
         fi
 
-        ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
-        ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
         if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
             break
         fi
@@ -110,13 +110,24 @@ networks_screen() {
     show_message "Scanning for networks" forever
     DELAY=30
 
-    for i in $(seq 1 "$DELAY"); do
-        iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
-        if [ -s "$minui_list_file" ]; then
-            break
-        fi
-        sleep 1
-    done
+    if [ "$PLATFORM" = "my355" ]; then
+        wpa_cli -i wlan0 scan
+        for i in $(seq 1 "$DELAY"); do
+            wpa_cli -i wlan0 scan_results | grep -v "ssid" | cut -f 5 | sort -u >>"$minui_list_file"
+            if [ -s "$minui_list_file" ]; then
+                break
+            fi
+            sleep 1
+        done
+    else
+        for i in $(seq 1 "$DELAY"); do
+            iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort -u >>"$minui_list_file"
+            if [ -s "$minui_list_file" ]; then
+                break
+            fi
+            sleep 1
+        done
+    fi
 
     killall minui-presenter >/dev/null 2>&1 || true
     minui-list --disable-auto-sleep --file "$minui_list_file" --format text --confirm-text "CONNECT" --title "Wifi Networks" --write-location /tmp/minui-output
@@ -236,7 +247,7 @@ write_config() {
 
     echo "Generating wpa_supplicant.conf"
     template_file="$PAK_DIR/res/wpa_supplicant.conf.tmpl"
-    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ]; then
+    if [ "$PLATFORM" = "miyoomini" ] || [ "$PLATFORM" = "my282" ] || [ "$PLATFORM" = "my355" ]; then
         template_file="$PAK_DIR/res/wpa_supplicant.conf.$PLATFORM.tmpl"
     fi
 
@@ -314,6 +325,8 @@ write_config() {
     elif [ "$PLATFORM" = "my282" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wifi/wpa_supplicant.conf
         cp "$PAK_DIR/res/wpa_supplicant.conf" /config/wpa_supplicant.conf
+    elif [ "$PLATFORM" = "my355" ]; then
+        cp "$PAK_DIR/res/wpa_supplicant.conf" /userdata/cfg/wpa_supplicant.conf
     elif [ "$PLATFORM" = "rg35xxplus" ]; then
         cp "$PAK_DIR/res/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
         cp "$PAK_DIR/res/netplan.yaml" /etc/netplan/01-netcfg.yaml
@@ -326,6 +339,38 @@ write_config() {
         show_message "$PLATFORM is not a supported platform" 2
         return 1
     fi
+}
+
+has_credentials() {
+    if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
+        return 1
+    fi
+
+    while read -r line; do
+        line="$(echo "$line" | xargs)"
+        if [ -z "$line" ]; then
+            continue
+        fi
+
+        # skip if line starts with a comment
+        if echo "$line" | grep -q "^#"; then
+            continue
+        fi
+
+        # skip if line is not in the format "ssid:psk"
+        if ! echo "$line" | grep -q ":"; then
+            continue
+        fi
+
+        ssid="$(echo "$line" | cut -d: -f1 | xargs)"
+        if [ -z "$ssid" ]; then
+            continue
+        fi
+
+        return 0
+    done <"$SDCARD_PATH/wifi.txt"
+
+    return 1
 }
 
 wifi_off() {
@@ -352,7 +397,7 @@ wifi_on() {
         return 1
     fi
 
-    if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
+    if ! has_credentials; then
         show_message "No credentials found in wifi.txt" 2
         return 0
     fi
@@ -517,7 +562,7 @@ main() {
         return 1
     fi
 
-    allowed_platforms="my282 tg5040 rg35xxplus miyoomini"
+    allowed_platforms="miyoomini my282 my355 tg5040 rg35xxplus"
     if ! echo "$allowed_platforms" | grep -q "$PLATFORM"; then
         show_message "$PLATFORM is not a supported platform" 2
         return 1
