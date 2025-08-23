@@ -30,13 +30,7 @@ get_ssid_and_ip() {
     ssid=""
     ip_address=""
 
-    count=0
-    while true; do
-        count=$((count + 1))
-        if [ "$count" -gt 5 ]; then
-            break
-        fi
-
+    for i in $(seq 1 5); do
         if [ "$PLATFORM" = "my355" ]; then
             ssid="$(wpa_cli -i wlan0 status | grep ssid= | cut -d'=' -f2)"
         else
