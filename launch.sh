@@ -336,6 +336,38 @@ write_config() {
     fi
 }
 
+has_credentials() {
+    if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
+        return 1
+    fi
+
+    while read -r line; do
+        line="$(echo "$line" | xargs)"
+        if [ -z "$line" ]; then
+            continue
+        fi
+
+        # skip if line starts with a comment
+        if echo "$line" | grep -q "^#"; then
+            continue
+        fi
+
+        # skip if line is not in the format "ssid:psk"
+        if ! echo "$line" | grep -q ":"; then
+            continue
+        fi
+
+        ssid="$(echo "$line" | cut -d: -f1 | xargs)"
+        if [ -z "$ssid" ]; then
+            continue
+        fi
+
+        return 0
+    done <"$SDCARD_PATH/wifi.txt"
+
+    return 1
+}
+
 wifi_off() {
     echo "Preparing to toggle wifi off"
 
@@ -360,7 +392,7 @@ wifi_on() {
         return 1
     fi
 
-    if [ ! -s "$SDCARD_PATH/wifi.txt" ]; then
+    if ! has_credentials; then
         show_message "No credentials found in wifi.txt" 2
         return 0
     fi
