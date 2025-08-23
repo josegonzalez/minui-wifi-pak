@@ -37,7 +37,12 @@ get_ssid_and_ip() {
             break
         fi
 
-        ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
+        if [ "$PLATFORM" = "my355" ]; then
+            ssid="$(wpa_cli -i wlan0 status | grep ssid= | cut -d'=' -f2)"
+        else
+            ssid="$(iw dev wlan0 link | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')"
+        fi
+
         ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
         if [ -n "$ip_address" ] && [ -n "$ssid" ]; then
             break
