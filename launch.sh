@@ -111,9 +111,9 @@ networks_screen() {
     DELAY=30
 
     if [ "$PLATFORM" = "my355" ]; then
-            wpa_cli -i wlan0 scan
+        wpa_cli -i wlan0 scan
         for i in $(seq 1 "$DELAY"); do
-            wpa_cli -i wlan0 scan_results | grep -v "ssid" | cut -f 5 | sort >>"$minui_list_file"
+            wpa_cli -i wlan0 scan_results | grep -v "ssid" | cut -f 5 | sort -u >>"$minui_list_file"
             if [ -s "$minui_list_file" ]; then
                 break
             fi
@@ -121,7 +121,7 @@ networks_screen() {
         done
     else
         for i in $(seq 1 "$DELAY"); do
-            iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
+            iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort -u >>"$minui_list_file"
             if [ -s "$minui_list_file" ]; then
                 break
             fi
