@@ -110,6 +110,12 @@ networks_screen() {
     show_message "Scanning for networks" forever
     DELAY=30
 
+    if [ "$PLATFORM" = "my355" ]; then
+        wpa_cli scan
+        sleep 1
+        wpa_cli scan_results
+    fi
+
     for i in $(seq 1 "$DELAY"); do
         iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
         if [ -s "$minui_list_file" ]; then
