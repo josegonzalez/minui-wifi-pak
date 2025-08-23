@@ -111,18 +111,24 @@ networks_screen() {
     DELAY=30
 
     if [ "$PLATFORM" = "my355" ]; then
-        wpa_cli scan
-        sleep 1
-        wpa_cli scan_results
+        for i in $(seq 1 "$DELAY"); do
+            wpa_cli -i wlan0 scan
+            sleep 2
+            wpa_cli -i wlan0 scan_results | grep -v "ssid" | cut -f 5 | sort >>"$minui_list_file"
+            if [ -s "$minui_list_file" ]; then
+                break
+            fi
+            sleep 1
+        done
+    else
+        for i in $(seq 1 "$DELAY"); do
+            iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
+            if [ -s "$minui_list_file" ]; then
+                break
+            fi
+            sleep 1
+        done
     fi
-
-    for i in $(seq 1 "$DELAY"); do
-        iw dev wlan0 scan | grep SSID: | cut -d':' -f2- | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' | sort >>"$minui_list_file"
-        if [ -s "$minui_list_file" ]; then
-            break
-        fi
-        sleep 1
-    done
 
     killall minui-presenter >/dev/null 2>&1 || true
     minui-list --disable-auto-sleep --file "$minui_list_file" --format text --confirm-text "CONNECT" --title "Wifi Networks" --write-location /tmp/minui-output
