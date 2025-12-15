@@ -45,7 +45,7 @@ jobs:
           subject-path: "dist/${{ steps.pak-name.outputs.PAK_NAME }}.pak.zip"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: "${{ steps.pak-name.outputs.PAK_NAME }}.pak.zip"
           path: "dist/${{ steps.pak-name.outputs.PAK_NAME }}.pak.zip"
